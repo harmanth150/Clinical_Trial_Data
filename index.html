@@ -1,0 +1,2577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Clinical Trial Safety Search</title>
+  <style>
+    :root {
+      --bg: #f4f7fb;
+      --bg-2: #edf3f9;
+      --panel: rgba(255,255,255,.92);
+      --panel-2: #f8fbfe;
+      --line: #dbe6f1;
+      --line-2: #e7eef6;
+      --text: #17324d;
+      --muted: #5d7388;
+      --accent: #2d6ea4;
+      --accent-soft: #edf5fc;
+      --blue-soft: #eef4ff;
+      --green: #18794e;
+      --green-soft: #eaf8f0;
+      --amber: #8a5d10;
+      --amber-soft: #fff5df;
+      --red: #aa3b3b;
+      --red-soft: #fdecec;
+      --shadow: 0 18px 40px rgba(18, 42, 66, 0.08);
+      --radius-xl: 28px;
+      --radius-lg: 20px;
+      --radius-md: 16px;
+      --radius-sm: 12px;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, #ffffff 0%, rgba(255,255,255,0) 34%),
+        linear-gradient(180deg, #f8fbfe 0%, #f2f6fb 100%);
+    }
+    button, input, select, textarea { font: inherit; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .page {
+      width: min(1860px, calc(100vw - 24px));
+      margin: 12px auto 26px;
+    }
+    .hero {
+      background: linear-gradient(180deg, rgba(255,255,255,.98) 0%, rgba(248,251,254,.98) 100%);
+      border: 1px solid var(--line);
+      border-radius: 32px;
+      box-shadow: var(--shadow);
+      padding: 30px;
+      backdrop-filter: blur(12px);
+    }
+    .hero-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 18px;
+      flex-wrap: wrap;
+      margin-bottom: 18px;
+    }
+    h1 {
+      margin: 0;
+      font-size: clamp(1.6rem, 2.2vw, 2.1rem);
+      line-height: 1.1;
+      letter-spacing: -0.03em;
+    }
+    .hero p {
+      margin: 8px 0 0;
+      color: var(--muted);
+      line-height: 1.48;
+      max-width: 840px;
+      font-size: 1rem;
+    }
+    .hero-actions, .results-tools, .tab-row, .inline-tools {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .btn {
+      appearance: none;
+      border: 1px solid var(--line);
+      background: white;
+      color: var(--text);
+      border-radius: 999px;
+      padding: 11px 17px;
+      cursor: pointer;
+      font-weight: 700;
+      transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
+      box-shadow: 0 6px 18px rgba(27, 52, 76, 0.05);
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn.primary { background: linear-gradient(180deg, #3c84c1 0%, #2d6ea4 100%); color: white; border-color: #2d6ea4; box-shadow: 0 10px 24px rgba(45,110,164,.26); }
+    .btn.soft { background: var(--panel-2); }
+    .btn.green { background: linear-gradient(180deg, #2a9868 0%, #18794e 100%); color: white; border-color: #18794e; }
+    .btn.ghost { background: rgba(255,255,255,.7); }
+    .view-tabs { display: flex; gap: 10px; flex-wrap: wrap; margin: 16px 0; }
+    .tab-btn {
+      appearance: none;
+      border: 1px solid var(--line);
+      background: white;
+      color: var(--text);
+      border-radius: 999px;
+      padding: 11px 18px;
+      cursor: pointer;
+      font-weight: 800;
+      box-shadow: 0 6px 18px rgba(27, 52, 76, 0.05);
+    }
+    .tab-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
+    .tab-view.hidden { display: none; }
+    .search-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 20px;
+      align-items: start;
+    }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-xl);
+      padding: 24px;
+      min-width: 0;
+      box-shadow: 0 12px 28px rgba(25, 46, 68, 0.06);
+    }
+    .panel.alt { background: var(--panel-2); }
+    .panel h2 { margin: 0 0 14px; font-size: 1.18rem; letter-spacing: -0.02em; }
+    .section-title { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; margin-bottom: 12px; flex-wrap: wrap; }
+    .section-title h3 { margin: 0; font-size: .98rem; }
+    .subtle, .hint { color: var(--muted); font-size: .84rem; line-height: 1.42; }
+    .grid-2, .grid-3, .grid-4, .quick-cards, .stat-grid, .pooling-layout, .summary-grid { display: grid; gap: 14px; }
+    .grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .quick-cards { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+    .summary-grid { grid-template-columns: 1fr; }
+    .field { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+    .field label, .section-label { font-size: .82rem; font-weight: 800; }
+    .input, .select, .textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      background: white;
+      border-radius: 18px;
+      padding: 15px 16px;
+      outline: none;
+      color: var(--text);
+      transition: border-color .15s ease, box-shadow .15s ease;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.35);
+    }
+    .input:focus, .select:focus, .textarea:focus {
+      border-color: #9ec3e2;
+      box-shadow: 0 0 0 4px rgba(45,110,164,.10);
+    }
+    .textarea { min-height: 88px; resize: vertical; }
+    .stack.compact { display: grid; gap: 10px; }
+    .radio-set { display: flex; gap: 10px; flex-wrap: wrap; }
+    .check-card {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.92);
+      border-radius: 18px;
+      padding: 13px 15px;
+      cursor: pointer;
+      min-height: 56px;
+      transition: border-color .15s ease, transform .15s ease, background .15s ease;
+    }
+    .check-card:hover { border-color: #bdd4e8; transform: translateY(-1px); }
+    .check-card input { margin: 0; accent-color: var(--accent); }
+    .mini-card {
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.78);
+      border-radius: 18px;
+      padding: 16px;
+      min-width: 0;
+    }
+    .mini-card h3 { margin: 0 0 12px; font-size: .95rem; }
+    .age-range-inline { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 12px; }
+    .top-card { min-height: 100%; }
+    .more-card { padding: 0; overflow: hidden; }
+    .more-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 20px 22px;
+      cursor: pointer;
+      flex-wrap: wrap;
+    }
+    .more-body { display: none; padding: 0 22px 22px; border-top: 1px solid var(--line-2); background: rgba(255,255,255,.78); }
+    .more-card.open .more-body { display: block; }
+    .scroll-block { max-height: 116px; overflow: auto; padding-right: 4px; }
+    .collapsed-section { margin-top: 16px; }
+    .collapsed-head { display:flex; justify-content:space-between; align-items:center; gap:12px; cursor:pointer; padding: 0; }
+    .collapsed-body { display:none; margin-top:14px; }
+    .collapsed-section.open .collapsed-body { display:block; }
+    .section-block { padding: 18px 0; border-top: 1px solid var(--line-2); }
+    .section-block:first-child { border-top: 0; }
+    .active-filters { display: flex; gap: 8px; flex-wrap: wrap; }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      background: var(--accent-soft);
+      border: 1px solid #d4e4f4;
+      color: var(--accent);
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-size: .82rem;
+      font-weight: 700;
+    }
+    .stat-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 16px; }
+    .stat-card, .pipeline-card {
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.78);
+      border-radius: 22px;
+      padding: 18px 20px;
+      min-width: 0;
+    }
+    .stat-card .k, .pipeline-card .k { color: var(--muted); font-size: .92rem; font-weight: 700; }
+    .stat-card .v, .pipeline-card .v { font-size: 2.3rem; margin-top: 10px; font-weight: 900; letter-spacing: -0.03em; }
+    .stat-card .s, .pipeline-card .s { margin-top: 6px; color: var(--muted); font-size: .82rem; line-height: 1.4; }
+    .codebox {
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, #fbfdff 0%, #f4f8fc 100%);
+      border-radius: 24px;
+      padding: 20px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: .94rem;
+      white-space: pre-wrap;
+      word-break: break-word;
+      line-height: 1.34;
+    }
+    .studies-header { display: flex; justify-content: space-between; gap: 16px; align-items: end; flex-wrap: wrap; margin: 6px 0 14px; }
+    .studies-header h2, .pool-head h2 { margin: 0; font-size: 1.35rem; letter-spacing: -0.02em; }
+    .count-pill { background: var(--accent-soft); border: 1px solid #d4e4f4; color: var(--accent); border-radius: 999px; padding: 10px 14px; font-weight: 800; }
+    .result-list { display: grid; gap: 14px; }
+    .study-card {
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.86);
+      border-radius: 24px;
+      padding: 20px;
+      box-shadow: 0 10px 20px rgba(25, 46, 68, 0.04);
+    }
+    .study-top { display: flex; justify-content: space-between; gap: 18px; align-items: start; flex-wrap: wrap; }
+    .study-card h3 { margin: 0; font-size: 1.14rem; line-height: 1.28; letter-spacing: -0.02em; }
+    .meta { margin-top: 8px; color: var(--muted); font-size: .92rem; line-height: 1.45; }
+    .badge-row { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0 14px; }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 7px 11px;
+      font-size: .76rem;
+      font-weight: 800;
+      border: 1px solid transparent;
+    }
+    .badge.blue { background: var(--blue-soft); color: #3769a0; border-color: #d6e2f6; }
+    .badge.green { background: var(--green-soft); color: var(--green); border-color: #d0ebdc; }
+    .badge.amber { background: var(--amber-soft); color: var(--amber); border-color: #f3dfad; }
+    .badge.red { background: var(--red-soft); color: var(--red); border-color: #f3cccc; }
+    .status-note { color: var(--muted); font-size: .88rem; }
+    .study-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+    .toolbar-card {
+      display: grid;
+      grid-template-columns: 1.3fr 1fr;
+      gap: 18px;
+      align-items: start;
+    }
+    .search-actions-wrap {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .study-card.compact-top { padding-top: 18px; }
+    .top-filter-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr;
+      gap: 14px;
+      align-items: start;
+    }
+    .study-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+
+    .study-grid > div {
+      border: 1px solid var(--line-2);
+      background: rgba(248,251,254,.9);
+      border-radius: 18px;
+      padding: 14px;
+      min-width: 0;
+      line-height: 1.45;
+      font-size: .92rem;
+    }
+    .study-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    .link-btn {
+      appearance: none;
+      border: 0;
+      background: none;
+      padding: 0;
+      color: var(--accent);
+      cursor: pointer;
+      font: inherit;
+      font-weight: 800;
+    }
+    .loading, .empty {
+      border: 1px dashed #c8d7e5;
+      background: linear-gradient(180deg, #fbfdff 0%, #f5f9fd 100%);
+      border-radius: 24px;
+      padding: 26px;
+      color: var(--muted);
+      line-height: 1.48;
+    }
+    .pooling-layout { grid-template-columns: minmax(0, 1.45fr) 180px; gap: 8px; margin-top: 14px; align-items: start; }
+    .pool-head { display: flex; justify-content: space-between; gap: 14px; align-items: end; flex-wrap: wrap; }
+    .plot-panel {
+      border: 1px solid var(--line);
+      background: white;
+      border-radius: 22px;
+      padding: 16px;
+      min-height: 320px;
+      overflow-x: auto;
+    }
+    .plot-svg {
+      min-width: 1100px;
+    }
+    .table-panel {
+      border: 1px solid var(--line);
+      background: white;
+      border-radius: 22px;
+      padding: 16px;
+      overflow: auto;
+      max-height: 720px;
+    }
+    table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+    th, td { border-bottom: 1px solid var(--line-2); padding: 10px; text-align: left; vertical-align: top; }
+    th { position: sticky; top: 0; background: white; z-index: 1; }
+    .modal {
+      position: fixed; inset: 0; display: none; background: rgba(17,33,49,.46); padding: 24px; z-index: 50;
+      align-items: center; justify-content: center;
+    }
+    .modal.open { display: flex; }
+    .modal-card {
+      width: min(1100px, 100%);
+      max-height: 88vh;
+      overflow: auto;
+      border-radius: 28px;
+      background: white;
+      border: 1px solid var(--line);
+      box-shadow: 0 30px 70px rgba(10,24,39,.18);
+      padding: 22px;
+    }
+    pre { margin: 0; white-space: pre-wrap; word-break: break-word; }
+    @media (max-width: 1360px) {
+      .search-grid, .summary-grid, .pooling-layout { grid-template-columns: 1fr; }
+      .quick-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .study-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 920px) {
+      .page { width: min(100vw - 14px, 100%); }
+      .hero { padding: 18px; }
+      .panel { padding: 16px; }
+      .grid-2, .grid-3, .grid-4, .quick-cards, .study-grid, .stat-grid, .age-range-inline { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <section class="hero">
+      <div class="hero-top">
+        <div>
+          <h1>Clinical Trial Safety Search</h1>
+          <p>Single-file front-end for live ClinicalTrials.gov searches, local study review, and first-pass pooled adverse-event analysis. The search now trusts the API query fields so it stops dropping studies just because the browser tried to second-guess the website.</p>
+        </div>
+        <div class="hero-actions">
+          <button class="btn" id="resetBtn" type="button">Reset</button>
+          <button class="btn soft" id="developerBtn" type="button">Developer</button>
+          <button class="btn primary" id="searchBtn" type="button">Search</button>
+        </div>
+      </div>
+    </section>
+
+    <div class="view-tabs">
+      <button class="tab-btn active" id="searchTabBtn" type="button">Search</button>
+      <button class="tab-btn" id="resultsTabBtn" type="button">Results</button>
+      <button class="tab-btn" id="poolingTabBtn" type="button">Pooling</button>
+    </div>
+
+    <section class="tab-view" id="searchView">
+      <section class="hero">
+        <div class="search-grid">
+          <div class="panel alt">
+            <h2>Focus Your Search</h2>
+            <div class="grid-2">
+              <div class="field">
+                <label for="condition">Condition or disease</label>
+                <textarea id="condition" class="textarea" placeholder="Major Depressive Disorder, Schizophrenia, Bipolar I Disorder"></textarea>
+                <div class="hint">Comma-separated is supported. Enter one or many conditions.</div>
+              </div>
+              <div class="field">
+                <label for="intervention">Intervention or treatment</label>
+                <textarea id="intervention" class="textarea" placeholder="fluoxetine, vortioxetine, sertraline"></textarea>
+                <div class="hint">Comma-separated is supported. Each intervention is searched directly through the live API.</div>
+              </div>
+              <div class="field">
+                <label for="otherTerms">Other terms</label>
+                <input id="otherTerms" class="input" placeholder="suicidal ideation OR suicidality" />
+                <div class="hint">Sent directly as the ClinicalTrials.gov other-terms query.</div>
+              </div>
+              <div class="field">
+                <label for="location">Location</label>
+                <input id="location" class="input" placeholder="United States, California, Boston" />
+              </div>
+            </div>
+            <div class="section-block">
+              <div class="section-title">
+                <h3>Study Status</h3>
+                <span class="subtle">Use the same quick status split you asked for.</span>
+              </div>
+              <div class="radio-set">
+                <label class="check-card"><input type="radio" name="studyStatus" value="all" checked /> All studies</label>
+                <label class="check-card"><input type="radio" name="studyStatus" value="recruiting_notyet" /> Recruiting and not yet recruiting studies</label>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <div class="quick-cards">
+              <section class="panel top-card">
+                <h2>Study Phase</h2>
+                <div class="stack compact">
+                  <label class="check-card"><input type="checkbox" class="phaseChk" value="EARLY_PHASE1" /> Early Phase 1</label>
+                  <label class="check-card"><input type="checkbox" class="phaseChk" value="PHASE1" /> Phase 1</label>
+                  <label class="check-card"><input type="checkbox" class="phaseChk" value="PHASE2" /> Phase 2</label>
+                  <label class="check-card"><input type="checkbox" class="phaseChk" value="PHASE3" /> Phase 3</label>
+                  <label class="check-card"><input type="checkbox" class="phaseChk" value="PHASE4" /> Phase 4</label>
+                                  </div>
+              </section>
+              <section class="panel top-card">
+                <h2>Study Type</h2>
+                <div class="stack compact">
+                  <label class="check-card"><input type="checkbox" class="typeChk" value="INTERVENTIONAL" /> Interventional</label>
+                  <label class="check-card"><input type="checkbox" class="typeChk" value="OBSERVATIONAL" /> Observational</label>
+                  <label class="check-card"><input type="checkbox" class="typeChk" value="PATIENT_REGISTRY" /> Patient registries</label>
+                  <label class="check-card"><input type="checkbox" class="typeChk" value="EXPANDED_ACCESS" /> Expanded access</label>
+                  <label class="check-card"><input type="checkbox" class="typeChk" value="INDIVIDUAL_PATIENT" /> Individual patients</label>
+                  <label class="check-card"><input type="checkbox" class="typeChk" value="INTERMEDIATE_SIZE" /> Intermediate-size population</label>
+                  <label class="check-card"><input type="checkbox" class="typeChk" value="TREATMENT_IND" /> Treatment IND/Protocol</label>
+                </div>
+              </section>
+              <section class="panel top-card">
+                <h2>Study Results</h2>
+                <div class="stack compact">
+                  <label class="check-card"><input type="radio" name="studyResults" value="" checked /> Any</label>
+                  <label class="check-card"><input type="radio" name="studyResults" value="with" /> With results</label>
+                  <label class="check-card"><input type="radio" name="studyResults" value="without" /> Without results</label>
+                </div>
+              </section>
+              <section class="panel top-card">
+                <h2>Sex</h2>
+                <div class="stack compact">
+                  <label class="check-card"><input type="radio" name="sexFilter" value="ALL" checked /> All</label>
+                  <label class="check-card"><input type="radio" name="sexFilter" value="FEMALE" /> Female</label>
+                  <label class="check-card"><input type="radio" name="sexFilter" value="MALE" /> Male</label>
+                </div>
+              </section>
+              <section class="panel top-card">
+                <h2>Age</h2>
+                <div class="stack compact">
+                  <label class="check-card"><input class="agePresetChk" type="checkbox" value="child" /> Child (birth–17)</label>
+                  <label class="check-card"><input class="agePresetChk" type="checkbox" value="adult" /> Adult (18–64)</label>
+                  <label class="check-card"><input class="agePresetChk" type="checkbox" value="older" /> Older adult (65+)</label>
+                </div>
+                <label class="check-card" style="margin-top: 12px;"><input id="healthyVolunteers" type="checkbox" /> Accepts healthy volunteers</label>
+              </section>
+            </div>
+</div>
+        </div>
+      </section>
+
+      <section class="hero" style="margin-top: 16px;">
+        <section class="panel more-card" id="moreCard">
+          <div class="more-head" id="moreToggle">
+            <div>
+              <h2 style="margin:0;">More Filters</h2>
+              <div class="subtle">Compact advanced filters modeled after the structure you listed.</div>
+            </div>
+            <button class="btn soft" id="moreToggleBtn" type="button">Expand</button>
+          </div>
+          <div class="more-body" id="moreBody">
+            <div class="section-block">
+              <div class="section-title"><h3>More Ways to Search</h3></div>
+              <div class="grid-3">
+                <div class="field"><label for="titleAcronym">Title and/or Title Acronym</label><input id="titleAcronym" class="input" /></div>
+                <div class="field"><label for="outcomeMeasure">Outcome measure</label><input id="outcomeMeasure" class="input" /></div>
+                <div class="field"><label for="sponsorCollaborator">Sponsor and/or Collaborator</label><input id="sponsorCollaborator" class="input" /></div>
+                <div class="field"><label for="sponsorLead">Sponsor Lead</label><input id="sponsorLead" class="input" /></div>
+                <div class="field"><label for="studyIds">Study IDs</label><input id="studyIds" class="input" /></div>
+                <div class="field"><label for="facilityName">Facility Name</label><input id="facilityName" class="input" /></div>
+              </div>
+            </div>
+            <div class="section-block">
+              <div class="section-title"><h3>Results, documents, and sponsor filters</h3></div>
+              <div class="grid-4">
+                <div class="mini-card">
+                  <h3>FDAAA 801 Violations</h3>
+                  <label class="check-card"><input id="fdaViolation" type="checkbox" /> Yes</label>
+                </div>
+<div class="mini-card">
+                  <h3>Study Documents</h3>
+                  <div class="stack compact">
+                    <label class="check-card"><input class="docChk" type="checkbox" value="protocol" /> Study protocols</label>
+                    <label class="check-card"><input class="docChk" type="checkbox" value="sap" /> Statistical analysis plans</label>
+                    <label class="check-card"><input class="docChk" type="checkbox" value="icf" /> Informed consent forms</label>
+                  </div>
+                </div>
+                <div class="mini-card">
+                  <h3>Funder Type</h3>
+                  <div class="stack compact">
+                    <label class="check-card"><input class="funderChk" type="checkbox" value="NIH" /> NIH</label>
+                    <label class="check-card"><input class="funderChk" type="checkbox" value="OTHER_GOV" /> Other U.S. federal agency</label>
+                    <label class="check-card"><input class="funderChk" type="checkbox" value="INDUSTRY" /> Industry</label>
+                    <label class="check-card"><input class="funderChk" type="checkbox" value="OTHER" /> All others</label>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="section-block">
+              <div class="section-title"><h3>Date Range Filters</h3></div>
+              <div class="grid-3">
+                <div class="mini-card"><h3>Study start</h3><div class="grid-2"><div class="field"><label>From</label><input id="studyStartFrom" class="input" type="date" /></div><div class="field"><label>To</label><input id="studyStartTo" class="input" type="date" /></div></div></div>
+                <div class="mini-card"><h3>Primary completion</h3><div class="grid-2"><div class="field"><label>From</label><input id="primaryCompletionFrom" class="input" type="date" /></div><div class="field"><label>To</label><input id="primaryCompletionTo" class="input" type="date" /></div></div></div>
+                <div class="mini-card"><h3>First posted</h3><div class="grid-2"><div class="field"><label>From</label><input id="firstPostedFrom" class="input" type="date" /></div><div class="field"><label>To</label><input id="firstPostedTo" class="input" type="date" /></div></div></div>
+                <div class="mini-card"><h3>Results first posted</h3><div class="grid-2"><div class="field"><label>From</label><input id="resultsFirstPostedFrom" class="input" type="date" /></div><div class="field"><label>To</label><input id="resultsFirstPostedTo" class="input" type="date" /></div></div></div>
+                <div class="mini-card"><h3>Last update posted</h3><div class="grid-2"><div class="field"><label>From</label><input id="lastUpdatePostedFrom" class="input" type="date" /></div><div class="field"><label>To</label><input id="lastUpdatePostedTo" class="input" type="date" /></div></div></div>
+                <div class="mini-card"><h3>Study completion</h3><div class="grid-2"><div class="field"><label>From</label><input id="studyCompletionFrom" class="input" type="date" /></div><div class="field"><label>To</label><input id="studyCompletionTo" class="input" type="date" /></div></div></div>
+              </div>
+            </div>
+            <div class="section-block">
+              <div class="inline-tools">
+                <label class="check-card"><input id="otherTermsHard" type="checkbox" /> Treat Other terms as a hard local rule too</label>
+                <a id="expertSearchLink" href="https://clinicaltrials.gov/expert-search" target="_blank" rel="noreferrer">Expert Search</a>
+              </div>
+            </div>
+          </div>
+        </section>
+      </section>
+    </section>
+
+    <section class="tab-view hidden" id="resultsView">
+      <section class="hero">
+        <div class="section-title">
+          <div>
+            <h2 style="margin:0 0 8px;">Search Summary</h2>
+            <div class="subtle">Compact overview of the current search and the live response.</div>
+          </div>
+          <div class="active-filters" id="activeFilters"></div>
+        </div>
+        <div class="stat-grid" id="statsGrid"></div>
+        <div class="summary-grid" style="margin-top: 18px;">
+          <div class="panel alt">
+            <h2>Studies</h2>
+            <p style="margin-top:0; color:var(--muted);">The included studies stay visible at eye level, with the export tools above them.</p>
+            <div class="studies-header">
+              <div>
+                <h2>Included studies</h2>
+                <p id="resultsCount" style="margin:8px 0 0; color:var(--muted);">0 visible studies</p>
+              </div>
+              <div class="inline-tools">
+                <div class="field" style="min-width: 180px;"><label for="sortStudies">Sort</label><select class="select" id="sortStudies"><option value="title_az">Title A–Z</option><option value="title_za">Title Z–A</option><option value="nct">NCT</option></select></div>
+                <div class="field" style="min-width: 180px;"><label for="resultsPhaseFilter">Phase filter</label><select class="select" id="resultsPhaseFilter"><option value="">All visible phases</option><option value="PHASE1">Phase 1</option><option value="PHASE2">Phase 2</option><option value="PHASE3">Phase 3</option><option value="PHASE4">Phase 4</option><option value="EARLY_PHASE1">Early Phase 1</option></select></div>
+              </div>
+            </div>
+            <div class="results-tools">
+              <button class="btn" id="copyQueryBtnTop" type="button">Copy query preview</button>
+              <button class="btn" id="exportVisibleCsvBtn" type="button">Studies CSV</button>
+              <button class="btn" id="exportVisibleJsonBtn" type="button">Visible JSON</button>
+              <button class="btn" id="exportFetchedJsonBtn" type="button">Fetched JSON</button>
+            </div>
+            <div id="resultsArea" class="empty">No search has been run yet.</div>
+          </div>
+          <div class="panel">
+            <h2>API query preview</h2>
+            <div class="codebox" id="queryPreview">Build a search and press Search.</div>
+            <div class="results-tools" style="margin-top: 14px;">
+              <button class="btn" id="copyQueryBtn" type="button">Copy query preview</button>
+            </div>
+            <p class="subtle" id="resultsNote" style="margin-top: 14px;">Run a search to see fetched studies, included studies, extractable-ready studies, and excluded studies with reasons.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="hero collapsed-section" id="excludedSection" style="margin-top: 16px;">
+        <div class="collapsed-head" id="excludedToggle">
+          <div>
+            <h2 style="margin:0 0 8px;">Excluded studies</h2>
+            <div class="subtle">Collapsed by default so the page stays lighter. Expand only if you want to inspect filtered-out studies.</div>
+          </div>
+          <div class="inline-tools">
+            <div class="count-pill" id="excludedCount">0 excluded</div>
+            <button class="btn soft" id="excludedToggleBtn" type="button">Expand</button>
+          </div>
+        </div>
+        <div class="collapsed-body" id="excludedBody">
+          <div id="excludedArea" class="empty">No excluded studies yet.</div>
+        </div>
+      </section>
+    </section>
+
+    <section class="tab-view hidden" id="poolingView">
+      <section class="hero">
+        <div class="pool-head">
+          <div>
+            <h2>Pooling</h2>
+            <p style="margin:8px 0 0; color:var(--muted);">Pool selected studies together as closely as possible. This view now mirrors the core forest-plot components so you can review study IDs, intervention and control counts, weights, effect sizes, confidence intervals, the line of no effect, pooled effect, heterogeneity, and a small-publication-bias check.</p>
+          </div>
+          <div class="inline-tools">
+            <div class="field" id="poolAeSelectWrap" style="min-width:210px; display:none;"><label for="poolAeSelect">Preset adverse event</label><select id="poolAeSelect" class="select"><option value="death">Death</option></select></div>
+            <button class="btn" id="refreshPoolingBtn" type="button">Refresh</button>
+            <button class="btn soft" id="downloadForestBtn" type="button">Download forest PNG</button>
+            <button class="btn green" id="exportPoolingCsvBtn" type="button">Pooling CSV</button>
+          </div>
+        </div>
+        <div class="grid-2" style="margin-top: 14px; align-items: end;">
+          <div class="field">
+            <label for="poolAeTerms">Pooling search terms</label>
+            <textarea id="poolAeTerms" class="textarea" placeholder="Enter adverse event terms, for example: death, mortality"></textarea>
+            <div class="hint">The pooling page searches the adverse-event records from the studies you already pulled. Enter the exact term or terms you want to analyze, separated by commas.</div>
+          </div>
+          <div class="field" id="poolPresetWrap" style="display:none;"><label>Developer presets</label><div class="active-filters" id="poolPresetChips"></div></div>
+        </div>
+        <div class="inline-tools" style="margin-top: 14px;">
+          <div class="count-pill" id="poolingCount">0 studies in pool</div>
+          <div class="subtle" id="poolingSelectionSummary">0 selected studies ready for pooling.</div>
+        </div>
+        <div class="pooling-layout">
+          <div class="plot-panel" id="poolingPlot">Run a search first, then open Pooling.</div>
+          <div class="table-panel" id="poolingTable">No pooled data yet.</div>
+        </div>
+      </section>
+    </section>
+  </div>
+
+  <div class="modal" id="studyModal" aria-hidden="true">
+    <div class="modal-card">
+      <div class="section-title">
+        <div>
+          <h2 id="modalTitle" style="margin:0 0 8px;">Study</h2>
+          <div class="subtle" id="modalMeta"></div>
+        </div>
+        <button class="btn" id="closeModalBtn" type="button">Close</button>
+      </div>
+      <pre id="modalRaw"></pre>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = 'https://clinicaltrials.gov/api/v2/studies';
+    const state = {
+      rawStudies: [],
+      evaluatedStudies: [],
+      visibleStudies: [],
+      excludedStudies: [],
+      selectedStudyIds: new Set(),
+      excludedForestRows: new Set(),
+      poolingRowOverrides: {},
+      poolEditorOpen: {},
+      currentFilters: null,
+      lastQueryUrl: '',
+      loading: false,
+    };
+
+    const $ = (sel) => document.querySelector(sel);
+    const $$ = (sel) => Array.from(document.querySelectorAll(sel));
+    const els = {
+      condition: $('#condition'), intervention: $('#intervention'), otherTerms: $('#otherTerms'), location: $('#location'),
+      titleAcronym: $('#titleAcronym'), outcomeMeasure: $('#outcomeMeasure'), sponsorCollaborator: $('#sponsorCollaborator'), sponsorLead: $('#sponsorLead'), studyIds: $('#studyIds'), facilityName: $('#facilityName'),
+      fdaViolation: $('#fdaViolation'), resultsSubmitted: $('#resultsSubmitted'), healthyVolunteers: $('#healthyVolunteers'),
+      ageFrom: $('#ageFrom'), ageTo: $('#ageTo'), otherTermsHard: $('#otherTermsHard'),
+      searchBtn: $('#searchBtn'), searchBtnBottom: $('#searchBtnBottom'), resetBtn: $('#resetBtn'), resetBtnBottom: $('#resetBtnBottom'), developerBtn: $('#developerBtn'), developerBtnBottom: $('#developerBtnBottom'),
+      searchTabBtn: $('#searchTabBtn'), resultsTabBtn: $('#resultsTabBtn'), poolingTabBtn: $('#poolingTabBtn'),
+      searchView: $('#searchView'), resultsView: $('#resultsView'), poolingView: $('#poolingView'),
+      moreCard: $('#moreCard'), moreBody: $('#moreBody'), moreToggle: $('#moreToggle'), moreToggleBtn: $('#moreToggleBtn'),
+      activeFilters: $('#activeFilters'), statsGrid: $('#statsGrid'), queryPreview: $('#queryPreview'), resultsNote: $('#resultsNote'),
+      resultsArea: $('#resultsArea'), excludedArea: $('#excludedArea'), resultsCount: $('#resultsCount'), excludedCount: $('#excludedCount'),
+      copyQueryBtn: $('#copyQueryBtn'), copyQueryBtnTop: $('#copyQueryBtnTop'), exportVisibleCsvBtn: $('#exportVisibleCsvBtn'), exportVisibleJsonBtn: $('#exportVisibleJsonBtn'), exportFetchedJsonBtn: $('#exportFetchedJsonBtn'),
+      sortStudies: $('#sortStudies'), resultsPhaseFilter: $('#resultsPhaseFilter'),
+      poolAeSelect: $('#poolAeSelect'), poolAeTerms: $('#poolAeTerms'), refreshPoolingBtn: $('#refreshPoolingBtn'), downloadForestBtn: $('#downloadForestBtn'), downloadFunnelBtn: $('#downloadFunnelBtn'), exportPoolingCsvBtn: $('#exportPoolingCsvBtn'), poolingPlot: $('#poolingPlot'), poolingTable: $('#poolingTable'), poolingCount: $('#poolingCount'), poolingSelectionSummary: $('#poolingSelectionSummary'),
+      expertSearchLink: $('#expertSearchLink'), studyModal: $('#studyModal'), closeModalBtn: $('#closeModalBtn'), modalTitle: $('#modalTitle'), modalMeta: $('#modalMeta'), modalRaw: $('#modalRaw')
+    };
+
+    function parseList(value) {
+      return String(value || '').split(',').map(x => x.trim()).filter(Boolean);
+    }
+    function getCheckedValues(sel) {
+      return $$(sel).filter(el => el.checked).map(el => el.value);
+    }
+    function getRadio(name) {
+      return document.querySelector(`input[name="${name}"]:checked`)?.value || '';
+    }
+    function safeGet(obj, path, fallback = null) {
+      let cur = obj;
+      for (const key of path) {
+        if (cur == null) return fallback;
+        cur = cur[key];
+      }
+      return cur ?? fallback;
+    }
+    function normalizeText(s) {
+      return String(s || '').toLowerCase().replace(/[^a-z0-9\s/+_-]+/g, ' ').replace(/\s+/g, ' ').trim();
+    }
+    function escapeHtml(s) {
+      return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+    function parseAgeToYears(ageValue) {
+      if (!ageValue) return null;
+      const text = String(ageValue).trim();
+      const m = text.match(/^([0-9]+(?:\.[0-9]+)?)\s*(year|years|month|months|week|weeks|day|days)/i);
+      if (!m) return null;
+      const value = Number(m[1]);
+      const unit = m[2].toLowerCase();
+      if (unit.startsWith('year')) return value;
+      if (unit.startsWith('month')) return value / 12;
+      if (unit.startsWith('week')) return value / 52.1429;
+      return value / 365.25;
+    }
+    function formatDate(raw) {
+      if (!raw) return 'Not listed';
+      return String(raw);
+    }
+    function withinDate(dateValue, from, to) {
+      if (!from && !to) return true;
+      if (!dateValue) return false;
+      const value = String(dateValue).slice(0, 10);
+      if (from && value < from) return false;
+      if (to && value > to) return false;
+      return true;
+    }
+    function overlapStudyAge(study, minYears, maxYears) {
+      const lo = study.minimumAgeYears == null ? 0 : study.minimumAgeYears;
+      const hi = study.maximumAgeYears == null ? 200 : study.maximumAgeYears;
+      return lo <= maxYears && hi >= minYears;
+    }
+    function matchesAgeFilter(study, filters) {
+      const ranges = [];
+      if (filters.agePresets.includes('child')) ranges.push([0,17]);
+      if (filters.agePresets.includes('adult')) ranges.push([18,64]);
+      if (filters.agePresets.includes('older')) ranges.push([65,200]);
+      if (filters.ageFrom != null || filters.ageTo != null) ranges.push([filters.ageFrom ?? 0, filters.ageTo ?? 200]);
+      if (!ranges.length) return true;
+      return ranges.some(([a,b]) => overlapStudyAge(study, a, b));
+    }
+    function matchesSex(study, filters) {
+      if (!filters.sex || filters.sex === 'ALL') return true;
+      return String(study.sex || '').toUpperCase() === filters.sex;
+    }
+    function matchesStudyType(study, filters) {
+      if (!filters.studyTypes.length) return true;
+      const value = String(study.studyType || '').toUpperCase();
+      const map = { INTERVENTIONAL:'INTERVENTIONAL', OBSERVATIONAL:'OBSERVATIONAL', PATIENT_REGISTRY:'PATIENT_REGISTRY', EXPANDED_ACCESS:'EXPANDED_ACCESS', INDIVIDUAL_PATIENT:'INDIVIDUAL_PATIENT', INTERMEDIATE_SIZE:'INTERMEDIATE_SIZE', TREATMENT_IND:'TREATMENT_IND_PROTOCOL' };
+      return filters.studyTypes.some(key => value.includes(map[key] || key));
+    }
+    function matchesPhase(study, filters) {
+      if (!filters.phases.length) return true;
+      const selected = new Set(filters.phases.map(x => String(x).toUpperCase()));
+      const phases = (study.phases || []).map(x => String(x).toUpperCase());
+      return phases.some(p => selected.has(p));
+    }
+    function matchesTextField(query, haystack) {
+      if (!query) return true;
+      return normalizeText(haystack).includes(normalizeText(query));
+    }
+    function matchesLocation(study, filters) {
+      return true;
+    }
+    function matchesDocuments(study, filters) {
+      if (!filters.studyDocuments.length) return true;
+      const docText = normalizeText(study.documentText);
+      return filters.studyDocuments.every(v => docText.includes(v));
+    }
+    function matchesFunder(study, filters) {
+      if (!filters.funderTypes.length) return true;
+      const cls = String(study.funderClass || '').toUpperCase();
+      return filters.funderTypes.some(v => cls.includes(v));
+    }
+    function matchesHealthyVolunteers(study, filters) {
+      if (!filters.healthyVolunteers) return true;
+      return !!study.healthyVolunteers;
+    }
+    function otherTermsMatch(study, query) {
+      if (!query) return { ok: true, reason: 'no other terms query' };
+      const hay = normalizeText([
+        study.briefTitle, study.officialTitle, study.acronym,
+        ...(study.conditions || []), ...(study.keywords || []),
+        study.briefSummary, study.detailedDescription,
+        ...(study.outcomeText || []), study.eligibilityText,
+        study.resultsText, study.adverseEventText
+      ].join(' | '));
+      const groups = String(query).split(/\s+OR\s+/i).map(g => g.trim()).filter(Boolean);
+      const ok = groups.some(group => group.split(/\s+AND\s+/i).map(x => normalizeText(x)).filter(Boolean).every(term => hay.includes(term)));
+      return { ok, reason: ok ? 'other terms found in returned study text' : 'other terms not confirmed in returned study text' };
+    }
+    function flattenStudy(study) {
+      const ident = safeGet(study, ['protocolSection','identificationModule'], {});
+      const status = safeGet(study, ['protocolSection','statusModule'], {});
+      const sponsor = safeGet(study, ['protocolSection','sponsorCollaboratorsModule'], {});
+      const design = safeGet(study, ['protocolSection','designModule'], {});
+      const conds = safeGet(study, ['protocolSection','conditionsModule'], {});
+      const arms = safeGet(study, ['protocolSection','armsInterventionsModule'], {});
+      const elig = safeGet(study, ['protocolSection','eligibilityModule'], {});
+      const contacts = safeGet(study, ['protocolSection','contactsLocationsModule'], {});
+      const outcomes = safeGet(study, ['protocolSection','outcomesModule'], {});
+      const docs = safeGet(study, ['protocolSection','documentsModule'], {});
+      const desc = safeGet(study, ['protocolSection','descriptionModule'], {});
+      const results = safeGet(study, ['resultsSection'], {});
+      const adverse = results.adverseEventsModule || {};
+
+      const interventionsDetailed = (arms.interventions || []).map(x => ({ type: x.type || '', primaryName: x.name || '', allNames: [x.name, ...((x.otherNames || []))].filter(Boolean) }));
+      const interventions = interventionsDetailed.flatMap(x => x.allNames).filter(Boolean);
+      const armGroups = arms.armGroups || [];
+      const armLabels = armGroups.map(x => x.label).filter(Boolean);
+      const armInterventionNames = armGroups.flatMap(x => x.interventionNames || []).filter(Boolean);
+      const locationsRaw = contacts.locations || [];
+      const locations = locationsRaw.map(loc => [loc.facility, loc.city, loc.state, loc.country].filter(Boolean).join(', ')).filter(Boolean);
+      const facilityNames = locationsRaw.map(loc => loc.facility).filter(Boolean);
+      const conditions = conds.conditions || [];
+      const keywords = conds.keywords || [];
+      const outcomeText = [ ...(outcomes.primaryOutcomes || []).flatMap(x => [x.measure, x.description]).filter(Boolean), ...(outcomes.secondaryOutcomes || []).flatMap(x => [x.measure, x.description]).filter(Boolean), ...(outcomes.otherOutcomes || []).flatMap(x => [x.measure, x.description]).filter(Boolean) ];
+      const minAgeYears = parseAgeToYears(elig.minimumAge);
+      const maxAgeYears = parseAgeToYears(elig.maximumAge);
+      const collaboratorText = (sponsor.collaborators || []).map(x => x.name).filter(Boolean).join(' | ');
+      const documentText = JSON.stringify(docs).toLowerCase();
+      const resultsText = JSON.stringify(results).toLowerCase();
+      const adverseEventText = JSON.stringify(adverse).toLowerCase();
+      const comparisonLabel = buildComparisonLabel(armLabels, interventions);
+      return {
+        raw: study,
+        rawText: JSON.stringify(study).toLowerCase(),
+        nctId: ident.nctId || '',
+        secondaryIds: (ident.orgStudyIdInfo?.id ? [ident.orgStudyIdInfo.id] : []).concat((ident.secondaryIdInfos || []).map(x => x.id).filter(Boolean)),
+        briefTitle: ident.briefTitle || '',
+        officialTitle: ident.officialTitle || '',
+        acronym: ident.acronym || '',
+        url: ident.nctId ? `https://clinicaltrials.gov/study/${ident.nctId}` : '',
+        overallStatus: status.overallStatus || '',
+        studyFirstPosted: status.studyFirstPostDateStruct?.date || status.studyFirstSubmitDate || '',
+        lastUpdatePosted: status.lastUpdatePostDateStruct?.date || status.lastUpdateSubmitDate || '',
+        resultsFirstPostedDate: status.resultsFirstPostDateStruct?.date || '',
+        primaryCompletionDate: status.primaryCompletionDateStruct?.date || '',
+        completionDate: status.completionDateStruct?.date || '',
+        studyStartDate: status.startDateStruct?.date || '',
+        studyType: design.studyType || '',
+        phases: design.phases || [],
+        allocation: design.designInfo?.allocation || '',
+        masking: design.designInfo?.maskingInfo?.masking || design.designInfo?.masking || '',
+        primaryPurpose: design.designInfo?.primaryPurpose || '',
+        enrollment: status.enrollmentInfo?.count || design.enrollmentInfo?.count || '',
+        conditions,
+        keywords,
+        interventions,
+        interventionsDetailed,
+        armLabels,
+        armInterventionNames,
+        armGroupsSimple: armGroups.map(g => ({ label: g.label || '', type: g.type || '', description: g.description || '', interventionNames: g.interventionNames || [] })),
+        locations,
+        facilityNames,
+        leadSponsor: sponsor.leadSponsor?.name || '',
+        funderClass: sponsor.leadSponsor?.class || '',
+        collaboratorText,
+        sex: elig.sex || 'ALL',
+        minimumAgeText: elig.minimumAge || 'Not listed',
+        maximumAgeText: elig.maximumAge || 'Not listed',
+        minimumAgeYears: minAgeYears,
+        maximumAgeYears: maxAgeYears,
+        healthyVolunteers: elig.healthyVolunteers === true,
+        eligibilityText: elig.eligibilityCriteria || '',
+        briefSummary: desc.briefSummary || '',
+        detailedDescription: desc.detailedDescription || '',
+        outcomeText,
+        documentText,
+        resultsText,
+        adverseEventText,
+        hasResults: !!study.hasResults,
+        hasAdverseEventsModule: !!results.adverseEventsModule,
+        hasFdaaaViolation: JSON.stringify(study).toLowerCase().includes('fdaaa') && JSON.stringify(study).toLowerCase().includes('violation'),
+        comparisonLabel,
+      };
+    }
+    function buildComparisonLabel(armLabels, interventions) {
+      const labels = (armLabels || []).filter(Boolean);
+      const placeboLabels = labels.filter(label => /placebo|pbo|vehicle|sham/i.test(label));
+      const activeLabels = labels.filter(label => !/placebo|pbo|vehicle|sham/i.test(label));
+      if (activeLabels.length === 1 && placeboLabels.length) return `${activeLabels[0]} vs Placebo`;
+      if (activeLabels.length === 2 && !placeboLabels.length) return `${activeLabels[0]} vs ${activeLabels[1]}`;
+      if (activeLabels.length > 1 && placeboLabels.length) return `${activeLabels.join(' vs ')} vs Placebo`;
+      if (labels.length === 2) return `${labels[0]} vs ${labels[1]}`;
+      if (labels.length > 2) return labels.join(' vs ');
+      if ((interventions || []).length === 2) return `${interventions[0]} vs ${interventions[1]}`;
+      if ((interventions || []).length > 2) return interventions.join(' vs ');
+      if ((interventions || []).length === 1) return `${interventions[0]} vs Placebo/Comparator`;
+      return 'Comparison not clearly listed';
+    }
+    function collectFilters() {
+      return {
+        conditions: parseList(els.condition.value),
+        interventions: parseList(els.intervention.value),
+        otherTerms: els.otherTerms.value.trim(),
+        otherTermsHard: els.otherTermsHard.checked,
+        location: els.location.value.trim(),
+        studyStatus: getRadio('studyStatus'),
+        phases: getCheckedValues('.phaseChk'),
+        studyTypes: getCheckedValues('.typeChk'),
+        titleAcronym: els.titleAcronym.value.trim(),
+        outcomeMeasure: els.outcomeMeasure.value.trim(),
+        sponsorCollaborator: els.sponsorCollaborator.value.trim(),
+        sponsorLead: els.sponsorLead.value.trim(),
+        studyIds: els.studyIds.value.trim(),
+        facilityName: els.facilityName.value.trim(),
+        fdaViolation: els.fdaViolation.checked,
+        resultsSubmitted: els.resultsSubmitted ? els.resultsSubmitted.value : '',
+        studyDocuments: getCheckedValues('.docChk'),
+        funderTypes: getCheckedValues('.funderChk'),
+        studyResults: getRadio('studyResults'),
+        sex: getRadio('sexFilter'),
+        agePresets: getCheckedValues('.agePresetChk'),
+        ageFrom: els.ageFrom && els.ageFrom.value ? Number(els.ageFrom.value) : null,
+        ageTo: els.ageTo && els.ageTo.value ? Number(els.ageTo.value) : null,
+        healthyVolunteers: els.healthyVolunteers.checked,
+        dates: {
+          studyStartFrom: $('#studyStartFrom').value, studyStartTo: $('#studyStartTo').value,
+          primaryCompletionFrom: $('#primaryCompletionFrom').value, primaryCompletionTo: $('#primaryCompletionTo').value,
+          firstPostedFrom: $('#firstPostedFrom').value, firstPostedTo: $('#firstPostedTo').value,
+          resultsFirstPostedFrom: $('#resultsFirstPostedFrom').value, resultsFirstPostedTo: $('#resultsFirstPostedTo').value,
+          lastUpdatePostedFrom: $('#lastUpdatePostedFrom').value, lastUpdatePostedTo: $('#lastUpdatePostedTo').value,
+          studyCompletionFrom: $('#studyCompletionFrom').value, studyCompletionTo: $('#studyCompletionTo').value,
+        }
+      };
+    }
+    function buildApiParams(filters, pageToken = '') {
+      const params = new URLSearchParams();
+      params.set('format', 'json');
+      params.set('pageSize', '100');
+      params.set('countTotal', 'true');
+      params.set('sort', 'StudyFirstPostDate:desc');
+      if (filters.conditions.length) params.set('query.cond', filters.conditions.join(' OR '));
+      if (filters.interventions.length) params.set('query.intr', filters.interventions.join(' OR '));
+      if (filters.otherTerms) params.set('query.term', filters.otherTerms);
+      if (filters.location) params.set('query.locn', filters.location);
+      if (filters.studyStatus === 'recruiting_notyet') params.set('filter.overallStatus', 'RECRUITING|NOT_YET_RECRUITING');
+      if (pageToken) params.set('pageToken', pageToken);
+      return params;
+    }
+    function buildQueryPreview(filters) {
+      const lines = [];
+      lines.push('ClinicalTrials.gov v2 live request');
+      lines.push('');
+      lines.push(`Condition/disease: ${filters.conditions.join(', ') || 'none'}`);
+      lines.push(`Intervention/treatment: ${filters.interventions.join(', ') || 'none'}`);
+      lines.push(`Other terms: ${filters.otherTerms || 'none'}`);
+      lines.push(`Location: ${filters.location || 'none'}`);
+      lines.push(`Study Status: ${filters.studyStatus === 'recruiting_notyet' ? 'Recruiting and not yet recruiting studies' : 'All studies'}`);
+      lines.push(`Study Phase: ${filters.phases.join(', ') || 'none'}`);
+      lines.push(`Study Type: ${filters.studyTypes.join(', ') || 'none'}`);
+      lines.push(`Other terms local rule: ${filters.otherTerms ? (filters.otherTermsHard ? 'hard rule' : 'soft signal only') : 'none'}`);
+      lines.push('');
+      lines.push(`${API_BASE}?${buildApiParams(filters).toString()}`);
+      return lines.join('\n');
+    }
+    function makeExpertSearchText(filters) {
+      return `Open Expert Search. Current app query: ${filters.conditions.join(', ')} | ${filters.interventions.join(', ')} | ${filters.otherTerms}`;
+    }
+    function evaluateStudy(study, filters) {
+      const reasons = [];
+      const flags = {};
+      flags.queryFields = { ok: true, reason: 'Condition, intervention, other terms, location, and status are trusted from the ClinicalTrials.gov API response.' };
+      flags.phase = { ok: matchesPhase(study, filters), reason: 'study phase did not match selected phases' };
+      if (!flags.phase.ok) reasons.push(flags.phase.reason);
+      flags.studyType = { ok: matchesStudyType(study, filters), reason: 'study type did not match selected study types' };
+      if (!flags.studyType.ok) reasons.push(flags.studyType.reason);
+      flags.title = { ok: !filters.titleAcronym || matchesTextField(filters.titleAcronym, `${study.briefTitle} ${study.officialTitle} ${study.acronym}`), reason: 'title/acronym filter not matched' };
+      if (!flags.title.ok) reasons.push(flags.title.reason);
+      flags.outcome = { ok: !filters.outcomeMeasure || matchesTextField(filters.outcomeMeasure, study.outcomeText.join(' | ')), reason: 'outcome measure filter not matched' };
+      if (!flags.outcome.ok) reasons.push(flags.outcome.reason);
+      flags.sponsorCollaborator = { ok: !filters.sponsorCollaborator || matchesTextField(filters.sponsorCollaborator, `${study.leadSponsor} ${study.collaboratorText}`), reason: 'sponsor/collaborator filter not matched' };
+      if (!flags.sponsorCollaborator.ok) reasons.push(flags.sponsorCollaborator.reason);
+      flags.sponsorLead = { ok: !filters.sponsorLead || matchesTextField(filters.sponsorLead, study.leadSponsor), reason: 'lead sponsor filter not matched' };
+      if (!flags.sponsorLead.ok) reasons.push(flags.sponsorLead.reason);
+      flags.studyIds = { ok: !filters.studyIds || matchesTextField(filters.studyIds, `${study.nctId} ${(study.secondaryIds || []).join(' | ')}`), reason: 'study IDs filter not matched' };
+      if (!flags.studyIds.ok) reasons.push(flags.studyIds.reason);
+      flags.facility = { ok: !filters.facilityName || matchesTextField(filters.facilityName, study.facilityNames.join(' | ')), reason: 'facility name filter not matched' };
+      if (!flags.facility.ok) reasons.push(flags.facility.reason);
+      flags.location = { ok: matchesLocation(study, filters), reason: 'location filter not matched' };
+      if (!flags.location.ok) reasons.push(flags.location.reason);
+      flags.sex = { ok: matchesSex(study, filters), reason: 'sex filter not matched' };
+      if (!flags.sex.ok) reasons.push(flags.sex.reason);
+      flags.age = { ok: matchesAgeFilter(study, filters), reason: 'study does not overlap requested age range' };
+      if (!flags.age.ok) reasons.push(flags.age.reason);
+      flags.results = { ok: filters.studyResults !== 'with' || study.hasResults, reason: 'study does not have posted results' };
+      if (!flags.results.ok) reasons.push(flags.results.reason);
+      if (filters.studyResults === 'without' && study.hasResults) reasons.push('study has posted results but Without results was selected');
+      if (filters.resultsSubmitted) {
+        if (filters.resultsSubmitted === 'no_results_submitted' && study.hasResults) reasons.push('results submitted state did not match');
+        if (filters.resultsSubmitted === 'submitted_qc_not_concluded' && !(study.rawText.includes('qc') || study.rawText.includes('quality control'))) reasons.push('results submitted state did not match');
+        if (filters.resultsSubmitted === 'submission_qc_comments' && !(study.rawText.includes('qc comments') || study.rawText.includes('quality control comments'))) reasons.push('results submitted state did not match');
+      }
+      if (filters.fdaViolation && !study.hasFdaaaViolation) reasons.push('FDAAA 801 violation filter not matched');
+      if (!matchesDocuments(study, filters)) reasons.push('study documents filter not matched');
+      if (!matchesFunder(study, filters)) reasons.push('funder type filter not matched');
+      if (!matchesHealthyVolunteers(study, filters)) reasons.push('does not accept healthy volunteers');
+      if (!withinDate(study.studyStartDate, filters.dates.studyStartFrom, filters.dates.studyStartTo)) reasons.push('study start date filter not matched');
+      if (!withinDate(study.primaryCompletionDate, filters.dates.primaryCompletionFrom, filters.dates.primaryCompletionTo)) reasons.push('primary completion date filter not matched');
+      if (!withinDate(study.studyFirstPosted, filters.dates.firstPostedFrom, filters.dates.firstPostedTo)) reasons.push('first posted date filter not matched');
+      if (!withinDate(study.resultsFirstPostedDate, filters.dates.resultsFirstPostedFrom, filters.dates.resultsFirstPostedTo)) reasons.push('results first posted date filter not matched');
+      if (!withinDate(study.lastUpdatePosted, filters.dates.lastUpdatePostedFrom, filters.dates.lastUpdatePostedTo)) reasons.push('last update posted date filter not matched');
+      if (!withinDate(study.completionDate, filters.dates.studyCompletionFrom, filters.dates.studyCompletionTo)) reasons.push('study completion date filter not matched');
+      const otherTermsCheck = otherTermsMatch(study, filters.otherTerms);
+      flags.otherTerms = { ok: !filters.otherTerms || otherTermsCheck.ok, reason: !filters.otherTerms ? 'no other terms query' : otherTermsCheck.reason };
+      if (filters.otherTerms && filters.otherTermsHard && !flags.otherTerms.ok) reasons.push(flags.otherTerms.reason);
+      flags.websiteLike = { ok: reasons.length === 0, reason: reasons.length ? reasons.join('; ') : 'passed visible filters' };
+      flags.extractableReady = { ok: reasons.length === 0 && (study.hasResults || study.hasAdverseEventsModule), reason: (study.hasResults || study.hasAdverseEventsModule) ? 'has results or adverse-event support' : 'no posted results or adverse-event module support' };
+      return { include: reasons.length === 0, reasons, flags };
+    }
+    async function fetchAllStudies(filters) {
+      const seen = new Set();
+      const all = [];
+      let token = '';
+      let pages = 0;
+      let lastUrl = '';
+      do {
+        const params = buildApiParams(filters, token);
+        const url = `${API_BASE}?${params.toString()}`;
+        lastUrl = url;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`ClinicalTrials.gov request failed with status ${res.status}`);
+        const data = await res.json();
+        for (const study of (data.studies || [])) {
+          const nctId = safeGet(study, ['protocolSection','identificationModule','nctId'], '') || `${Math.random()}`;
+          if (seen.has(nctId)) continue;
+          seen.add(nctId);
+          all.push(study);
+        }
+        token = data.nextPageToken || '';
+        pages += 1;
+        if (pages >= 30) break;
+      } while (token);
+      state.lastQueryUrl = lastUrl;
+      return all;
+    }
+    function switchTab(name) {
+      els.searchView.classList.toggle('hidden', name !== 'search');
+      els.resultsView.classList.toggle('hidden', name !== 'results');
+      els.poolingView.classList.toggle('hidden', name !== 'pooling');
+      els.searchTabBtn.classList.toggle('active', name === 'search');
+      els.resultsTabBtn.classList.toggle('active', name === 'results');
+      els.poolingTabBtn.classList.toggle('active', name === 'pooling');
+      if (name === 'pooling') renderPooling();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    function setLoading(on) {
+      state.loading = on;
+      if (on) {
+        els.resultsArea.className = 'loading';
+        els.resultsArea.textContent = 'Searching live ClinicalTrials.gov records...';
+        els.excludedArea.className = 'loading';
+        els.excludedArea.textContent = 'Checking visible filters...';
+      }
+      if (els.searchBtn) els.searchBtn.disabled = on;
+      if (els.searchBtnBottom) els.searchBtnBottom.disabled = on;
+    }
+    function renderActiveFilters(filters) {
+      const items = [];
+      if (filters.conditions.length) items.push(`Condition: ${filters.conditions.join(', ')}`);
+      if (filters.interventions.length) items.push(`Intervention: ${filters.interventions.join(', ')}`);
+      if (filters.otherTerms) items.push(`Other terms: ${filters.otherTerms}`);
+      if (filters.location) items.push(`Location: ${filters.location}`);
+      if (filters.phases.length) items.push(`Phase: ${filters.phases.join(', ')}`);
+      if (filters.studyTypes.length) items.push(`Type: ${filters.studyTypes.join(', ')}`);
+      if (filters.studyResults) items.push(`Results: ${filters.studyResults}`);
+      if (filters.ageFrom != null || filters.ageTo != null) items.push(`Age: ${filters.ageFrom ?? 0} to ${filters.ageTo ?? 'any'}`);
+      els.activeFilters.innerHTML = items.map(x => `<span class="pill">${escapeHtml(x)}</span>`).join('');
+    }
+
+    function scrollableHtml(value) {
+      return `<div class="scroll-block">${escapeHtml(value || 'Not listed')}</div>`;
+    }
+    function extractCitationMeta(study) {
+      const raw = study?.raw || study || {};
+      const rawStrings = [];
+      const authorLists = [];
+
+      const pushString = value => {
+        if (typeof value === 'string' && value.trim()) rawStrings.push(value.trim());
+      };
+
+      const cleanLastName = value => String(value || '').trim().replace(/[^A-Za-z'`-]/g, '');
+
+      const parseAuthorStringList = value => {
+        return String(value || '')
+          .split(/\s*;\s*|\s+and\s+|\s*&\s*|(?<=\b[A-Z][a-z]+,\s*[A-Z](?:\.[A-Z]\.)?)\s*,\s*/)
+          .map(v => v.trim())
+          .filter(Boolean);
+      };
+
+      const parseLastName = author => {
+        const cleaned = String(author || '').replace(/^\s*\d+\.\s*/, '').trim();
+        if (!cleaned) return '';
+        if (cleaned.includes(',')) return cleanLastName(cleaned.split(',')[0]);
+        const parts = cleaned.split(/\s+/).filter(Boolean);
+        if (!parts.length) return '';
+        return cleanLastName(parts[parts.length - 1]);
+      };
+
+      const pushAuthors = value => {
+        if (!value) return;
+        if (Array.isArray(value)) {
+          const cleaned = value.map(v => {
+            if (typeof v === 'string') return v.trim();
+            if (v && typeof v === 'object') return String(v.lastName || v.familyName || v.author || '').trim();
+            return '';
+          }).filter(Boolean);
+          if (cleaned.length) authorLists.push(cleaned);
+          return;
+        }
+        if (typeof value === 'object') {
+          const cleaned = [value.lastName, value.familyName, value.author].map(v => String(v || '').trim()).filter(Boolean);
+          if (cleaned.length) authorLists.push(cleaned);
+          return;
+        }
+        if (typeof value === 'string' && value.trim()) {
+          const cleaned = parseAuthorStringList(value);
+          if (cleaned.length) authorLists.push(cleaned);
+        }
+      };
+
+      const referenceNodes = [];
+      const visit = (node, depth = 0, keyHint = '') => {
+        if (!node || depth > 8) return;
+        if (Array.isArray(node)) {
+          node.forEach(item => visit(item, depth + 1, keyHint));
+          return;
+        }
+        if (typeof node !== 'object') return;
+
+        Object.entries(node).forEach(([key, value]) => {
+          const lowKey = String(key || '').toLowerCase();
+
+          if (lowKey.includes('reference') || lowKey.includes('citation') || lowKey === 'pmid') {
+            referenceNodes.push(value);
+            pushString(typeof value === 'string' ? value : '');
+          }
+          if (['author', 'authors', 'lastname', 'last_name', 'familyname', 'family_name'].includes(lowKey)) {
+            pushAuthors(value);
+          }
+          if (lowKey === 'citation' && typeof value === 'string') pushString(value);
+          visit(value, depth + 1, lowKey);
+        });
+      };
+      visit(raw);
+
+      const extractYear = values => {
+        for (const rawVal of values) {
+          const m = String(rawVal).match(/\b(?:19|20)\d{2}\b/);
+          if (m) return m[0];
+        }
+        return '';
+      };
+
+      const yearFromStrings = extractYear(rawStrings);
+
+      const citationPatterns = [
+        /^(?:[0-9]+\.\s*)?([A-Z][A-Za-z'`-]+),\s*(?:[A-Z]{1,3}\b|[A-Z]\.)/,
+        /^(?:[0-9]+\.\s*)?([A-Z][A-Za-z'`-]+)\s+et\s+al\.?/i,
+        /^(?:[0-9]+\.\s*)?([A-Z][A-Za-z'`-]+)\s+[A-Z](?:\.[A-Z]\.)?/,
+      ];
+
+      for (const authors of authorLists) {
+        const firstLast = parseLastName(authors[0]);
+        if (firstLast) {
+          return { lastName: firstLast, year: yearFromStrings, multipleAuthors: authors.length > 1 };
+        }
+      }
+
+      const flattenedRefs = [];
+      const flattenRefNode = node => {
+        if (!node) return;
+        if (typeof node === 'string') {
+          flattenedRefs.push(node);
+          return;
+        }
+        if (Array.isArray(node)) {
+          node.forEach(flattenRefNode);
+          return;
+        }
+        if (typeof node === 'object') {
+          const candidateStrings = [
+            node.citation,
+            node.reference,
+            node.pmidCitation,
+            node.citationText,
+            node.text,
+            node.value
+          ].filter(v => typeof v === 'string' && v.trim());
+          candidateStrings.forEach(v => flattenedRefs.push(v));
+          if (node.author || node.authors || node.lastName || node.familyName) {
+            pushAuthors(node.author || node.authors || node.lastName || node.familyName);
+          }
+          Object.values(node).forEach(flattenRefNode);
+        }
+      };
+      referenceNodes.forEach(flattenRefNode);
+
+      const refYear = extractYear(flattenedRefs) || yearFromStrings;
+
+      for (const rawRef of flattenedRefs) {
+        const cleaned = String(rawRef).replace(/^\s*\d+\.\s*/, '').trim();
+        for (const pat of citationPatterns) {
+          const m = cleaned.match(pat);
+          if (m && m[1]) {
+            const multipleAuthors = /(?:\bet\s+al\b)|(?:,\s*[A-Z](?:\.[A-Z]\.)?)/i.test(cleaned);
+            return { lastName: cleanLastName(m[1]), year: refYear, multipleAuthors };
+          }
+        }
+      }
+
+      for (const authors of authorLists) {
+        const firstLast = parseLastName(authors[0]);
+        if (firstLast) {
+          return { lastName: firstLast, year: refYear || yearFromStrings, multipleAuthors: authors.length > 1 };
+        }
+      }
+
+      return { lastName: '', year: refYear || yearFromStrings, multipleAuthors: false };
+    }
+function shortStudyCitation(study) {
+      return '';
+    }
+    function renderStudyNamePill(study) {
+      return `<span class="pill">${escapeHtml(shortStudyCitation(study))}</span>`;
+    }
+    function forestRowKey(row) {
+      return [
+        String(row?.drugClass || '').trim(),
+        String(row?.groupPattern || '').trim(),
+        String(row?.nctId || '').trim(),
+        String(row?.compare || '').trim()
+      ].join('||');
+    }
+    function isForestRowExcluded(row) {
+      return state.excludedForestRows.has(forestRowKey(row));
+    }
+    function toggleForestRowExclusion(key) {
+      if (!key) return;
+      if (state.excludedForestRows.has(key)) state.excludedForestRows.delete(key);
+      else state.excludedForestRows.add(key);
+      renderPooling();
+    }
+    function getPoolingRowOverride(key) {
+      return key && state.poolingRowOverrides ? state.poolingRowOverrides[key] : null;
+    }
+    function setPoolingRowOverrideField(key, field, value, shouldRender = false) {
+      if (!key || !field) return;
+      if (!state.poolingRowOverrides) state.poolingRowOverrides = {};
+      const base = state.poolingRowOverrides[key] || {};
+      const num = Number(value);
+      base[field] = Number.isFinite(num) && num >= 0 ? Math.floor(num) : 0;
+      state.poolingRowOverrides[key] = base;
+      if (shouldRender) renderPooling();
+    }
+    function applyPoolingRowOverrideFields(key, values) {
+      if (!key || !values) return;
+      Object.entries(values).forEach(([field, value]) => setPoolingRowOverrideField(key, field, value, false));
+    }
+    function setPoolEditorOpen(pattern, open) {
+      if (!pattern) return;
+      if (!state.poolEditorOpen) state.poolEditorOpen = {};
+      state.poolEditorOpen[pattern] = !!open;
+    }
+    function isPoolEditorOpen(pattern) {
+      return !!(state.poolEditorOpen && state.poolEditorOpen[pattern]);
+    }
+        function clearPoolingRowOverride(key) {
+      if (!key || !state.poolingRowOverrides) return;
+      delete state.poolingRowOverrides[key];
+      renderPooling();
+    }
+
+    function renderStats(visible, fetched, filters, excluded) {
+      const extractable = visible.filter(s => s._evaluation?.flags?.extractableReady?.ok).length;
+      els.statsGrid.innerHTML = `
+        <div class="stat-card"><div class="k">Fetched</div><div class="v">${fetched.length}</div><div class="s">Raw unique NCTs returned by the live API query</div></div>
+        <div class="stat-card"><div class="k">Included</div><div class="v">${visible.length}</div><div class="s">Passed the visible filters in the browser</div></div>
+        <div class="stat-card"><div class="k">Excluded</div><div class="v">${excluded.length}</div><div class="s">Returned by the API but removed by filters</div></div>
+        <div class="stat-card"><div class="k">Extractable-ready</div><div class="v">${extractable}</div><div class="s">Included and has results or AE support</div></div>`;
+      els.resultsNote.textContent = filters.otherTerms ? `Other terms is going directly into the ClinicalTrials.gov API query${filters.otherTermsHard ? ' and is also being enforced as a hard local rule.' : '. Local re-checking stays soft unless you turn on the hard rule.'}` : 'Run a search to see fetched studies, included studies, extractable-ready studies, and excluded studies with reasons.';
+    }
+    function phaseBadge(study) { return `<span class="badge blue">${escapeHtml((study.phases || []).join(', ') || 'Phase not listed')}</span>`; }
+    function statusBadge(status) {
+      const s = normalizeText(status);
+      if (s.includes('completed')) return `<span class="badge green">${escapeHtml(status)}</span>`;
+      if (s.includes('recruiting')) return `<span class="badge amber">${escapeHtml(status)}</span>`;
+      return `<span class="badge blue">${escapeHtml(status || 'Status not listed')}</span>`;
+    }
+    function resultsBadge(hasResults) { return `<span class="badge ${hasResults ? 'green' : 'amber'}">${hasResults ? 'With results' : 'Without results'}</span>`; }
+    function formatList(list) { return list && list.length ? list.join(', ') : 'Not listed'; }
+    function applyResultsSortAndFilters(studies) {
+      let rows = [...studies];
+      const phase = els.resultsPhaseFilter.value;
+      if (phase) rows = rows.filter(study => (study.phases || []).map(x => String(x).toUpperCase()).includes(phase));
+      const sort = els.sortStudies.value;
+      if (sort === 'title_az') rows.sort((a,b) => (a.briefTitle || a.officialTitle || '').localeCompare(b.briefTitle || b.officialTitle || ''));
+      if (sort === 'title_za') rows.sort((a,b) => (b.briefTitle || b.officialTitle || '').localeCompare(a.briefTitle || a.officialTitle || ''));
+      if (sort === 'nct') rows.sort((a,b) => (a.nctId || '').localeCompare(b.nctId || ''));
+      return rows;
+    }
+    function renderStudies(includedStudies, excludedStudies) {
+      const visible = applyResultsSortAndFilters(includedStudies);
+      state.visibleStudies = visible;
+      if (!state.selectedStudyIds.size) visible.forEach(study => state.selectedStudyIds.add(study.nctId));
+      els.resultsCount.textContent = `${visible.length} visible studies`;
+      els.excludedCount.textContent = `${excludedStudies.length} excluded`;
+      if (!visible.length) {
+        els.resultsArea.className = 'empty';
+        els.resultsArea.textContent = 'No studies passed the visible filters for this search.';
+      } else {
+        els.resultsArea.className = 'result-list';
+        els.resultsArea.innerHTML = visible.map((study, idx) => {
+          const decision = study._evaluation || { flags: {}, reasons: [] };
+          const selected = state.selectedStudyIds.has(study.nctId);
+          const otherTermsBadge = state.currentFilters?.otherTerms ? `<span class="badge ${decision.flags.otherTerms?.ok ? 'green' : 'amber'}">${decision.flags.otherTerms?.ok ? 'Other terms captured' : 'Other terms not confirmed locally'}</span>` : '';
+          return `
+            <article class="study-card" id="study-${escapeHtml(study.nctId)}">
+              <div class="study-top">
+                <div>
+                  ${renderStudyNamePill(study)}<h3>${escapeHtml(study.briefTitle || study.officialTitle || 'Untitled study')}</h3>
+                  <div class="meta"><button class="link-btn" type="button" data-copy-nct="${escapeHtml(study.nctId)}">${escapeHtml(study.nctId)}</button> • ${escapeHtml(study.studyType || 'Study type not listed')} • Lead sponsor: ${escapeHtml(study.leadSponsor || 'Not listed')}</div>
+                </div>
+                <div class="study-actions">
+                  <label class="check-card"><input type="checkbox" data-select-study="${escapeHtml(study.nctId)}" ${selected ? 'checked' : ''}/> Include in pooling/export</label>
+                  <button class="btn soft" type="button" data-open-modal="${idx}">View raw study JSON</button>
+                </div>
+              </div>
+              <div class="badge-row">
+                ${statusBadge(study.overallStatus)}
+                ${phaseBadge(study)}
+                ${resultsBadge(study.hasResults)}
+                <span class="badge blue">${decision.flags.extractableReady?.ok ? 'Extractable-ready' : 'Needs more AE support'}</span>
+                ${otherTermsBadge}
+              </div>
+              <div class="status-note">Included by the visible filter rulebook</div>
+              <div class="study-grid" style="margin-top:14px;">
+                <div><div class="section-label">Comparison</div>${scrollableHtml(study.comparisonLabel)}</div>
+                <div><div class="section-label">Enrollment</div><div>${escapeHtml(study.enrollment || 'Not listed')}</div></div>
+                <div><div class="section-label">Design</div><div class="scroll-block">Allocation: ${escapeHtml(study.allocation || 'Not listed')}<br/>Masking: ${escapeHtml(study.masking || 'Not listed')}<br/>Primary purpose: ${escapeHtml(study.primaryPurpose || 'Not listed')}</div></div>
+                <div><div class="section-label">Conditions</div>${scrollableHtml(formatList(study.conditions))}</div>
+                <div><div class="section-label">Interventions</div>${scrollableHtml(formatList(study.interventions))}</div>
+                <div><div class="section-label">Eligibility</div><div>Sex: ${escapeHtml(study.sex || 'ALL')}<br/>Age: ${escapeHtml(study.minimumAgeText)} to ${escapeHtml(study.maximumAgeText)}</div></div>
+                <div><div class="section-label">Dates</div><div>Study start: ${escapeHtml(formatDate(study.studyStartDate))}<br/>Primary completion: ${escapeHtml(formatDate(study.primaryCompletionDate))}<br/>Last update: ${escapeHtml(formatDate(study.lastUpdatePosted))}</div></div>
+                <div><div class="section-label">Sites</div>${scrollableHtml(formatList(study.facilityNames))}</div>
+                <div><div class="section-label">Open study</div><div>${study.url ? `<a href="${study.url}" target="_blank" rel="noreferrer">Open on ClinicalTrials.gov</a>` : 'Not available'}</div></div>
+              </div>
+            </article>`;
+        }).join('');
+      }
+      if (!excludedStudies.length) {
+        if (els.excludedArea) {
+          els.excludedArea.className = 'empty';
+          els.excludedArea.textContent = 'No excluded studies for this search.';
+        }
+      } else if (document.getElementById('excludedSection')?.classList.contains('open')) {
+        renderExcludedStudies(excludedStudies);
+      } else if (els.excludedArea) {
+        els.excludedArea.className = 'empty';
+        els.excludedArea.textContent = 'Expand to view excluded studies.';
+      }
+    }
+    function renderExcludedStudies(excludedStudies) {
+      if (!els.excludedArea) return;
+      if (!excludedStudies.length) {
+        els.excludedArea.className = 'empty';
+        els.excludedArea.textContent = 'No excluded studies for this search.';
+        return;
+      }
+      els.excludedArea.className = 'result-list';
+      els.excludedArea.innerHTML = excludedStudies.map(study => `
+          <article class="study-card">
+            ${renderStudyNamePill(study)}
+            <h3>${escapeHtml(study.briefTitle || study.officialTitle || 'Untitled study')}</h3>
+            <div class="meta">${escapeHtml(study.nctId)} • ${escapeHtml(study.studyType || 'Study type not listed')} • ${escapeHtml(study.overallStatus || 'Status not listed')}</div>
+            <div class="badge-row" style="margin-top:10px;">${statusBadge(study.overallStatus)} ${phaseBadge(study)} ${resultsBadge(study.hasResults)}</div>
+            <div class="status-note">${escapeHtml((study._evaluation?.reasons || []).join(' • ') || 'Removed by filters')}</div>
+          </article>`).join('');
+    }
+    function csvCell(v) { return '"' + String(v ?? '').replace(/"/g, '""') + '"'; }
+    function downloadBlob(name, content, type) {
+      const blob = new Blob([content], { type });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = name;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+    function exportVisibleCsv() {
+      const rows = state.visibleStudies.filter(study => state.selectedStudyIds.has(study.nctId));
+      const header = ['NCT ID','Title','Comparison','Status','Study Type','Phases','Lead Sponsor','Enrollment','Has Results','Conditions','Interventions','Minimum Age','Maximum Age','URL'];
+      const body = rows.map(study => [study.nctId, study.briefTitle || study.officialTitle, study.comparisonLabel, study.overallStatus, study.studyType, (study.phases || []).join(' | '), study.leadSponsor, study.enrollment, study.hasResults ? 'Yes' : 'No', (study.conditions || []).join(' | '), (study.interventions || []).join(' | '), study.minimumAgeText, study.maximumAgeText, study.url]);
+      downloadBlob('studies_visible.csv', [header, ...body].map(r => r.map(csvCell).join(',')).join('\n'), 'text/csv;charset=utf-8');
+    }
+    function exportVisibleJson() { downloadBlob('studies_visible.json', JSON.stringify(state.visibleStudies, null, 2), 'application/json;charset=utf-8'); }
+    function exportFetchedJson() { downloadBlob('studies_fetched.json', JSON.stringify(state.rawStudies, null, 2), 'application/json;charset=utf-8'); }
+    async function fetchStudyDetail(nctId) {
+      const res = await fetch(`${API_BASE}/${encodeURIComponent(nctId)}?format=json`);
+      if (!res.ok) throw new Error(`detail fetch failed for ${nctId} (${res.status})`);
+      return await res.json();
+    }
+    async function ensurePoolingDetails(studies) {
+      const chosen = studies.filter(Boolean);
+      const toFetch = chosen.filter(study => {
+        const hasAdverse = !!safeGet(study, ['raw','resultsSection','adverseEventsModule'], null);
+        const hasResultsShell = !!safeGet(study, ['raw','resultsSection'], null);
+        return !(hasAdverse && hasResultsShell) && !study._detailFetched;
+      });
+      await Promise.all(toFetch.map(async study => {
+        try {
+          const full = await fetchStudyDetail(study.nctId);
+          study.raw = full;
+          const refreshed = flattenStudy(full);
+          Object.keys(refreshed).forEach(key => { study[key] = refreshed[key]; });
+          study._detailFetched = true;
+        } catch (err) {
+          study._detailFetched = true;
+          study._detailError = err.message || String(err);
+        }
+      }));
+    }
+    function poolSelectedStudies() { return state.visibleStudies.filter(study => state.selectedStudyIds.has(study.nctId)); }
+    const AE_PRESETS = {
+      nausea: ['nausea','nauseated'],
+      vomiting: ['vomiting','vomit','emesis'],
+      diarrhea: ['diarrhea','diarrhoea','loose stool'],
+      death: ['death','died','fatal','mortality'],
+      suicidality: [
+        'suicidality',
+        'suicidal behavior',
+        'suicidal behaviour',
+        'suicidal ideation',
+        'suicide attempt',
+        'attempted suicide',
+        'completed suicide',
+        'intentional self injury',
+        'intentional self-injury',
+        'self injurious behavior',
+        'self injurious behaviour',
+        'self harm',
+        'self-harm'
+      ]
+    };
+    function expandPoolTerms(rawTerms) {
+      const out = [];
+      const seen = new Set();
+      rawTerms.forEach(term => {
+        const norm = normalizeText(term);
+        if (!norm) return;
+        const add = value => {
+          const token = normalizeText(value);
+          if (!token || seen.has(token)) return;
+          seen.add(token);
+          out.push(token);
+        };
+        add(norm);
+        if (AE_PRESETS[norm]) {
+          AE_PRESETS[norm].forEach(add);
+        }
+        if (/suicid|self harm|self-harm|self injur|self-injur|suicide attempt|intentional self/.test(norm)) {
+          AE_PRESETS.suicidality.forEach(add);
+        }
+      });
+      return out;
+    }
+    function getPoolSearchTerms() {
+      const raw = String(els.poolAeTerms?.value || '').trim();
+      if (!raw) return [];
+      return expandPoolTerms(raw.split(',').map(x => x.trim()).filter(Boolean));
+    }
+    function shortStudyLabel(study) {
+      return shortStudyCitation(study);
+    }
+    function studyResultsUrl(nctId) {
+      return nctId ? `https://clinicaltrials.gov/study/${encodeURIComponent(nctId)}?tab=results` : '';
+    }
+    function setPoolPreset(name) {
+      const terms = (AE_PRESETS[name] || [name]).join(', ');
+      if (els.poolAeSelect) els.poolAeSelect.value = name;
+      if (els.poolAeTerms) els.poolAeTerms.value = terms;
+      renderPooling();
+    }
+    function poolingDrugTerms() {
+      const fromFilters = (state.currentFilters?.interventions || []).map(x => x.trim()).filter(Boolean);
+      if (fromFilters.length) return [...new Set(fromFilters)];
+      const fromVisible = state.visibleStudies.flatMap(study => (study.interventions || []).slice(0, 4)).map(x => String(x).trim()).filter(Boolean);
+      return [...new Set(fromVisible)];
+    }
+    function groupText(group) {
+      return normalizeText([group.title, group.description, ...(group.interventionNames || []), group.protocolLabel, ...(group.protocolInterventionNames || [])].join(' | '));
+    }
+    function matchedDrugTermsForGroup(group, drugTerms) {
+      const hay = groupText(group);
+      const matches = drugTerms.filter(drug => {
+        const token = normalizeText(drug);
+        return token && hay.includes(token);
+      });
+      if (matches.length) return [...new Set(matches)];
+      const protocolNames = [...(group.protocolInterventionNames || []), ...(group.interventionNames || [])].map(normalizeText);
+      const fallback = drugTerms.filter(drug => protocolNames.some(name => name && name.includes(normalizeText(drug))));
+      return [...new Set(fallback)];
+    }
+    function normalizeGroupId(value) {
+      if (value === undefined || value === null || value === '') return '';
+      return String(value).trim().toLowerCase();
+    }
+    function findEventGroupIndex(stat) {
+      const candidates = [stat.groupId, stat.eventGroupId, stat.reportingGroupId, stat.id];
+      for (const candidate of candidates) {
+        if (candidate === undefined || candidate === null || candidate === '') continue;
+        const raw = String(candidate);
+        const numeric = Number(raw);
+        if (Number.isFinite(numeric) && numeric > 0) return numeric - 1;
+        const digits = raw.match(/(\d+)/);
+        if (digits) return Number(digits[1]) - 1;
+      }
+      return null;
+    }
+    function eventMatchesTerms(ev, termNorms) {
+      if (!termNorms.length) return false;
+      const fields = [ev.term, ev.subTitle, ev.organSystem, ev.description, ev.vocab, ev.category].filter(Boolean).join(' | ');
+      const hay = normalizeText(fields);
+      return termNorms.some(term => {
+        if (!term) return false;
+        if (hay.includes(term)) return true;
+        if (term === 'suicidality') {
+          return /suicid|self harm|self-harm|self injur|self-injur|intentional self/.test(hay);
+        }
+        return false;
+      });
+    }
+    function collectAdverseEventEntries(adverse) {
+      const out = [];
+      const seen = new WeakSet();
+      function walk(node, inherited = {}) {
+        if (!node) return;
+        if (Array.isArray(node)) {
+          node.forEach(item => walk(item, inherited));
+          return;
+        }
+        if (typeof node !== 'object') return;
+        if (seen.has(node)) return;
+        seen.add(node);
+
+        const organSystem = node.organSystem || inherited.organSystem || '';
+        const category = node.category || inherited.category || '';
+        const term = node.term || node.subTitle || node.name || node.title || '';
+        const description = node.description || inherited.description || '';
+        const vocab = node.vocab || inherited.vocab || '';
+        const stats = Array.isArray(node.stats) ? node.stats : [];
+        if (term && stats.length) {
+          out.push({ term, subTitle: node.subTitle || '', organSystem, description, vocab, category, stats });
+        }
+
+        const nextInherited = { organSystem, category, description, vocab };
+        ['events', 'adverseEvents', 'seriousEvents', 'otherEvents', 'categories'].forEach(key => {
+          if (Array.isArray(node[key])) walk(node[key], nextInherited);
+        });
+        Object.keys(node).forEach(key => {
+          if (['events','adverseEvents','seriousEvents','otherEvents','categories','stats'].includes(key)) return;
+          const value = node[key];
+          if (Array.isArray(value) && value.some(item => item && typeof item === 'object')) walk(value, nextInherited);
+        });
+      }
+      walk(adverse, {});
+      return out;
+    }
+    function buildMergedGroupMap(study, adverse, requestedDrugs) {
+      const resultGroups = adverse.eventGroups || adverse.groups || adverse.reportingGroups || [];
+      const protocolGroups = study.armGroupsSimple || [];
+      const merged = [];
+      const byId = new Map();
+      const byIndex = new Map();
+      const usedProtocolIdx = new Set();
+
+      function normalizedGroupTokens(groupLike = {}) {
+        const raw = [
+          groupLike.title,
+          groupLike.label,
+          groupLike.description,
+          ...(groupLike.interventionNames || []),
+          groupLike.protocolLabel,
+          ...(groupLike.protocolInterventionNames || [])
+        ].filter(Boolean).join(' | ');
+        const hay = normalizeText(raw);
+        return new Set(hay.split(' ').filter(Boolean));
+      }
+      function tokenOverlapScore(a, b) {
+        if (!a.size || !b.size) return 0;
+        let overlap = 0;
+        a.forEach(token => { if (b.has(token)) overlap += 1; });
+        return overlap;
+      }
+      function bestProtocolMatch(resultGroup = {}, resultIdx = -1) {
+        const resultTokens = normalizedGroupTokens(resultGroup);
+        let bestIdx = -1;
+        let bestScore = 0;
+        protocolGroups.forEach((pg, idx) => {
+          if (usedProtocolIdx.has(idx)) return;
+          const score = tokenOverlapScore(resultTokens, normalizedGroupTokens({
+            title: pg.label || '',
+            description: pg.description || '',
+            interventionNames: pg.interventionNames || []
+          }));
+          if (score > bestScore) {
+            bestScore = score;
+            bestIdx = idx;
+          }
+        });
+        if (bestIdx >= 0 && bestScore > 0) {
+          usedProtocolIdx.add(bestIdx);
+          return protocolGroups[bestIdx];
+        }
+        if (resultIdx >= 0 && resultIdx < protocolGroups.length && !usedProtocolIdx.has(resultIdx)) {
+          usedProtocolIdx.add(resultIdx);
+          return protocolGroups[resultIdx];
+        }
+        return {};
+      }
+      function addMerged(rg = {}, pg = {}, idx = 0) {
+        const title = rg.title || rg.label || pg.label || `Group ${idx + 1}`;
+        const description = rg.description || pg.description || '';
+        const interventionNames = (rg.interventionNames || []).filter(Boolean);
+        const protocolInterventionNames = (pg.interventionNames || []).filter(Boolean);
+        const hay = normalizeText([title, description, ...interventionNames, pg.label || '', ...protocolInterventionNames].join(' | '));
+        const isPlacebo = /placebo|pbo|vehicle|sham|control/i.test(hay);
+        const total = Number(rg.numParticipants || rg.numAtRisk || rg.numSubjects || rg.numAnalyzed || pg.numParticipants || pg.numAtRisk || 0) || 0;
+        const mergedGroup = {
+          idx,
+          ids: [rg.id, rg.groupId, rg.eventGroupId, rg.reportingGroupId].map(normalizeGroupId).filter(Boolean),
+          title,
+          description,
+          interventionNames,
+          protocolLabel: pg.label || '',
+          protocolInterventionNames,
+          hay,
+          isPlacebo,
+          total,
+          matchedDrugs: matchedDrugTermsForGroup({ title, description, interventionNames, protocolLabel: pg.label || '', protocolInterventionNames }, requestedDrugs)
+        };
+        merged.push(mergedGroup);
+        byIndex.set(idx, mergedGroup);
+        mergedGroup.ids.forEach(id => byId.set(id, mergedGroup));
+      }
+
+      resultGroups.forEach((rg, idx) => addMerged(rg || {}, bestProtocolMatch(rg || {}, idx), idx));
+      protocolGroups.forEach((pg, idx) => {
+        if (usedProtocolIdx.has(idx)) return;
+        addMerged({}, pg || {}, resultGroups.length + idx);
+      });
+
+      const nonPlacebo = merged.filter(g => !g.isPlacebo);
+      if (requestedDrugs.length === 1 && nonPlacebo.length === 1 && !nonPlacebo[0].matchedDrugs.length) {
+        nonPlacebo[0].matchedDrugs = [requestedDrugs[0]];
+      }
+      return { merged, byId, byIndex, strictIndexFallback: resultGroups.length > 0 && resultGroups.length === protocolGroups.length };
+    }
+    function resolveMergedGroup(stat, groupMaps) {
+      const idCandidates = [stat.groupId, stat.eventGroupId, stat.reportingGroupId, stat.id].map(normalizeGroupId).filter(Boolean);
+      for (const id of idCandidates) {
+        if (groupMaps.byId.has(id)) return groupMaps.byId.get(id);
+      }
+      const idx = findEventGroupIndex(stat);
+      if (groupMaps.strictIndexFallback && idx !== null && groupMaps.byIndex.has(idx)) return groupMaps.byIndex.get(idx);
+      return null;
+    }
+    function extractEventCounts(study, searchTerms) {
+      const adverse = safeGet(study.raw, ['resultsSection','adverseEventsModule'], {}) || {};
+      const termNorms = (searchTerms || []).map(normalizeText).filter(Boolean);
+      if (!termNorms.length) return [];
+
+      const requestedDrugs = poolingDrugTerms();
+      const studyDrugFallback = [...new Set((study.interventions || []).map(x => String(x).trim()).filter(Boolean))];
+      const drugTerms = requestedDrugs.length ? requestedDrugs : studyDrugFallback;
+      const groupMaps = buildMergedGroupMap(study, adverse, drugTerms);
+      const groups = groupMaps.merged.filter(g => g.total > 0 || g.title || g.protocolLabel);
+      if (!groups.length) return [];
+
+      const entries = collectAdverseEventEntries(adverse).filter(ev => eventMatchesTerms(ev, termNorms));
+      if (!entries.length) return [];
+
+      const perGroup = new Map();
+      function ensureRec(group) {
+        const key = `${study.nctId}|${group.idx}`;
+        if (!perGroup.has(key)) perGroup.set(key, { group, events: 0, total: Number(group.total || 0) || 0, matchedTerms: new Set() });
+        return perGroup.get(key);
+      }
+
+      entries.forEach(ev => {
+        (ev.stats || []).forEach(stat => {
+          const group = resolveMergedGroup(stat, groupMaps);
+          if (!group) return;
+          const rec = ensureRec(group);
+          const affected = Number(stat.numAffected ?? stat.numEvents ?? stat.numSubjectsAffected ?? stat.numParticipantsAffected ?? 0) || 0;
+          const atRisk = Number(stat.numAtRisk ?? stat.numSubjects ?? stat.numParticipants ?? stat.numAnalyzed ?? 0) || 0;
+          rec.events += Math.max(affected, 0);
+          rec.total = Math.max(rec.total, atRisk, rec.events);
+          rec.matchedTerms.add(normalizeText(ev.term || ev.subTitle || ''));
+        });
+      });
+
+      const enriched = [...perGroup.values()].map(rec => ({
+        ...rec.group,
+        events: rec.events,
+        total: rec.total,
+        matchedTerms: [...rec.matchedTerms]
+      })).filter(g => g.total > 0);
+      if (!enriched.length) return [];
+
+      const placeboGroups = enriched.filter(g => g.isPlacebo);
+      const activeGroups = enriched.filter(g => !g.isPlacebo);
+      if (!placeboGroups.length || !activeGroups.length) return [];
+
+      function chooseDrugName(group, fallback = '') {
+        return group.matchedDrugs[0] || fallback || group.protocolInterventionNames[0] || group.interventionNames[0] || group.protocolLabel || group.title;
+      }
+
+      const compositeByDrug = new Map();
+      function ensureComposite(drugName) {
+        const cleanDrug = normalizeText(drugName || studyDrugFallback[0] || 'active');
+        if (!compositeByDrug.has(cleanDrug)) {
+          compositeByDrug.set(cleanDrug, {
+            nctId: study.nctId,
+            title: study.briefTitle || study.officialTitle,
+            shortLabel: `${shortStudyLabel(study)} (${study.nctId})`,
+            drugClass: cleanDrug,
+            drugName: drugName || studyDrugFallback[0] || 'Active',
+            compareType: 'placebo',
+            compare: `${drugName || studyDrugFallback[0] || 'Active'} vs Placebo`,
+            activeGroup: 'Composite active',
+            comparatorGroup: 'Composite placebo',
+            activeEvents: 0,
+            activeTotal: 0,
+            comparatorEvents: 0,
+            comparatorTotal: 0,
+            groupPattern: `${drugName || studyDrugFallback[0] || 'Active'} vs placebo`,
+            matchedTerms: [],
+            _activeIdx: new Set(),
+            _placeboIdx: new Set(),
+            _matchedTerms: new Set()
+          });
+        }
+        return compositeByDrug.get(cleanDrug);
+      }
+
+      activeGroups.forEach(active => {
+        const drugNames = active.matchedDrugs.length ? active.matchedDrugs : [chooseDrugName(active, drugTerms[0] || studyDrugFallback[0] || 'Active')];
+        drugNames.forEach(drugName => {
+          const rec = ensureComposite(drugName);
+          if (!rec._activeIdx.has(active.idx)) {
+            rec._activeIdx.add(active.idx);
+            rec.activeEvents += Number(active.events) || 0;
+            rec.activeTotal += Number(active.total) || 0;
+          }
+          (active.matchedTerms || []).forEach(term => rec._matchedTerms.add(term));
+        });
+      });
+
+      compositeByDrug.forEach(rec => {
+        placeboGroups.forEach(placebo => {
+          if (!rec._placeboIdx.has(placebo.idx)) {
+            rec._placeboIdx.add(placebo.idx);
+            rec.comparatorEvents += Number(placebo.events) || 0;
+            rec.comparatorTotal += Number(placebo.total) || 0;
+          }
+          (placebo.matchedTerms || []).forEach(term => rec._matchedTerms.add(term));
+        });
+        rec.matchedTerms = [...rec._matchedTerms];
+        delete rec._activeIdx;
+        delete rec._placeboIdx;
+        delete rec._matchedTerms;
+      });
+
+      return [...compositeByDrug.values()].filter(row => row.activeTotal > 0 && row.comparatorTotal > 0);
+    }
+    function poolingMergeKey(row) {
+      return [
+        row.nctId,
+        normalizeText(row.drugClass || row.drugName || ''),
+        normalizeText(row.compareType || '')
+      ].join('|');
+    }
+    function aggregatePoolingRows(rows) {
+      const merged = new Map();
+      rows.forEach(row => {
+        const key = poolingMergeKey(row);
+        if (!merged.has(key)) {
+          merged.set(key, {
+            ...row,
+            shortLabel: `${shortStudyLabel({ ...row, briefTitle: row.title, nctId: row.nctId })} (${row.nctId})`,
+            matchedTerms: [...new Set(row.matchedTerms || [])]
+          });
+          return;
+        }
+        const target = merged.get(key);
+        target.activeEvents += Number(row.activeEvents) || 0;
+        target.activeTotal += Number(row.activeTotal) || 0;
+        target.comparatorEvents += Number(row.comparatorEvents) || 0;
+        target.comparatorTotal += Number(row.comparatorTotal) || 0;
+        target.matchedTerms = [...new Set([...(target.matchedTerms || []), ...(row.matchedTerms || [])])];
+      });
+      return [...merged.values()];
+    }
+    function buildPoolingRows() {
+      const terms = getPoolSearchTerms();
+      if (!terms.length) return { rows: [], excludedZeroZero: [] };
+      const excludedZeroZero = [];
+      const pooledSourceRows = aggregatePoolingRows(poolSelectedStudies().flatMap(study => extractEventCounts(study, terms)));
+      const rows = pooledSourceRows.map(row => {
+        const override = getPoolingRowOverride(forestRowKey(row)) || {};
+        const activeEventsRaw = Number(override.activeEvents ?? row.activeEvents) || 0;
+        const activeTotalRaw = Number(override.activeTotal ?? row.activeTotal) || 0;
+        const comparatorEventsRaw = Number(override.comparatorEvents ?? row.comparatorEvents) || 0;
+        const comparatorTotalRaw = Number(override.comparatorTotal ?? row.comparatorTotal) || 0;
+        if (activeEventsRaw === 0 && comparatorEventsRaw === 0) {
+          excludedZeroZero.push({
+            shortLabel: row.shortLabel,
+            compare: row.compare,
+            activeTotal: activeTotalRaw,
+            comparatorTotal: comparatorTotalRaw
+          });
+          return null;
+        }
+        let a = activeEventsRaw;
+        let b = Math.max(activeTotalRaw - a, 0);
+        let c = comparatorEventsRaw;
+        let d = Math.max(comparatorTotalRaw - c, 0);
+        const needsCorrection = [a,b,c,d].some(v => v === 0);
+        if (needsCorrection) {
+          a += 0.5; b += 0.5; c += 0.5; d += 0.5;
+        }
+        const logOr = Math.log((a * d) / (b * c));
+        const se = Math.sqrt((1 / a) + (1 / b) + (1 / c) + (1 / d));
+        const lowLog = logOr - 1.96 * se;
+        const highLog = logOr + 1.96 * se;
+        const weight = se > 0 ? 1 / (se * se) : 0;
+        return {
+          ...row,
+          excludeKey: forestRowKey(row),
+          activeEvents: activeEventsRaw,
+          activeTotal: activeTotalRaw,
+          comparatorEvents: comparatorEventsRaw,
+          comparatorTotal: comparatorTotalRaw,
+          activeEventsRaw,
+          comparatorEventsRaw,
+          effect: Math.exp(logOr),
+          logEffect: logOr,
+          low: Math.exp(lowLog),
+          high: Math.exp(highLog),
+          lowLog,
+          highLog,
+          weight,
+          searchTerms: terms.join(', '),
+          corrected: needsCorrection,
+          overrideApplied: !!Object.keys(override).length
+        };
+      }).filter(row => row && Number.isFinite(row.effect) && Number.isFinite(row.low) && Number.isFinite(row.high) && row.activeTotal > 0 && row.comparatorTotal > 0);
+      rows.excludedZeroZero = excludedZeroZero;
+      return rows;
+    }
+    function approxErf(x) {
+      const sign = x < 0 ? -1 : 1;
+      x = Math.abs(x);
+      const a1 = 0.254829592, a2 = -0.284496736, a3 = 1.421413741, a4 = -1.453152027, a5 = 1.061405429, p = 0.3275911;
+      const t = 1 / (1 + p * x);
+      const y = 1 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * Math.exp(-x * x);
+      return sign * y;
+    }
+    function normalCdf(x) { return 0.5 * (1 + approxErf(x / Math.SQRT2)); }
+    function pValueFromZ(z) { return Math.max(0, Math.min(1, 2 * (1 - normalCdf(Math.abs(z))))); }
+    function chiSquarePValue(q, df) {
+      if (!(q >= 0) || !(df > 0)) return 1;
+      const z = (Math.pow(q / df, 1 / 3) - (1 - 2 / (9 * df))) / Math.sqrt(2 / (9 * df));
+      return Math.max(0, Math.min(1, 1 - normalCdf(z)));
+    }
+    function formatPValue(p) {
+      if (!Number.isFinite(p)) return 'NA';
+      if (p < 0.001) return '<0.001';
+      return p.toFixed(3);
+    }
+    function formatPct(v) { return Number.isFinite(v) ? `${v.toFixed(1)}%` : '0.0%'; }
+    function stripStudyNct(label, nctId) {
+      return String(label || '').replace(` (${nctId})`, '').trim();
+    }
+    function svgTextWidthEstimate(text, fontSize = 11.2) {
+      return Math.max(0, String(text || '').length * fontSize * 0.56);
+    }
+    function truncateSvgText(text, maxWidth, fontSize = 11.2) {
+      const raw = String(text || '');
+      if (!raw) return '';
+      if (svgTextWidthEstimate(raw, fontSize) <= maxWidth) return raw;
+      let trimmed = raw;
+      while (trimmed.length > 1 && svgTextWidthEstimate(trimmed + '…', fontSize) > maxWidth) {
+        trimmed = trimmed.slice(0, -1);
+      }
+      return trimmed + '…';
+    }
+    function renderFunnelPlot(rows, pooledLog, width = 68, height = 84) {
+      if (!rows.length) return '';
+      const margin = { top: 8, right: 4, bottom: 12, left: 16 };
+      const innerWidth = Math.max(26, width - margin.left - margin.right);
+      const innerHeight = Math.max(34, height - margin.top - margin.bottom);
+      const seValues = rows.map(r => Math.sqrt(1 / Math.max(r.weight || 0, 1e-9))).filter(v => Number.isFinite(v) && v > 0);
+      const maxSe = Math.max(...seValues, 0.2) * 1.03;
+      const minSe = 0;
+      const oddsValues = rows.map(r => Math.exp(r.logEffect)).filter(v => Number.isFinite(v) && v > 0);
+      const pooledOr = Math.exp(pooledLog);
+      const minOr = Math.max(0.1, Math.min(...oddsValues, pooledOr / Math.exp(1.96 * maxSe)) * 0.92);
+      const maxOr = Math.min(10, Math.max(...oddsValues, pooledOr * Math.exp(1.96 * maxSe)) * 1.08);
+      const logMin = Math.log(minOr);
+      const logMax = Math.log(maxOr);
+      const x = orValue => margin.left + ((Math.log(Math.max(orValue, 1e-9)) - logMin) / (logMax - logMin || 1)) * innerWidth;
+      const y = se => margin.top + ((se - minSe) / (maxSe - minSe || 1)) * innerHeight;
+      const plotTop = y(minSe);
+      const plotBottom = y(maxSe);
+      const xCenter = x(pooledOr);
+      const leftBottom = x(pooledOr / Math.exp(1.96 * maxSe));
+      const rightBottom = x(pooledOr * Math.exp(1.96 * maxSe));
+      const ticks = [0.1, 0.25, 0.5, 1, 2, 4, 10].filter(v => v >= minOr * 0.98 && v <= maxOr * 1.02);
+      return `
+        <svg viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg" aria-label="Funnel plot">
+          <rect x="0" y="0" width="${width}" height="${height}" fill="#ffffff" rx="10"/>
+                    <line x1="${margin.left}" y1="${plotBottom}" x2="${width - margin.right}" y2="${plotBottom}" stroke="#8ea2b6" stroke-width="1"/>
+          <line x1="${margin.left}" y1="${plotTop}" x2="${margin.left}" y2="${plotBottom}" stroke="#8ea2b6" stroke-width="1"/>
+          <line x1="${xCenter}" y1="${plotTop}" x2="${xCenter}" y2="${plotBottom}" stroke="#5d7388" stroke-width="1" stroke-dasharray="3 3"/>
+          <line x1="${leftBottom}" y1="${plotBottom}" x2="${xCenter}" y2="${plotTop}" stroke="#9bb0c6" stroke-width="1" stroke-dasharray="3 3"/>
+          <line x1="${rightBottom}" y1="${plotBottom}" x2="${xCenter}" y2="${plotTop}" stroke="#9bb0c6" stroke-width="1" stroke-dasharray="3 3"/>
+          ${ticks.map(t => `<g><line x1="${x(t)}" y1="${plotBottom}" x2="${x(t)}" y2="${plotBottom + 2.5}" stroke="#8ea2b6"/><text x="${x(t)}" y="${plotBottom + 8}" text-anchor="middle" font-size="4.5" fill="#5d7388">${t >= 1 ? String(t) : t.toFixed(t === 0.1 ? 1 : 2).replace(/0+$/,'').replace(/\.$/,'')}</text></g>`).join('')}
+          ${[0, 0.25, 0.5, 0.75, 1].map(frac => {
+            const se = minSe + frac * (maxSe - minSe);
+            const py = y(se);
+            return `<g><line x1="${margin.left - 4}" y1="${py}" x2="${margin.left}" y2="${py}" stroke="#8ea2b6"/><text x="${margin.left - 7}" y="${py + 1.6}" text-anchor="end" font-size="4.5" fill="#5d7388">${se.toFixed(2)}</text></g>`;
+          }).join('')}
+          ${rows.map(r => {
+            const se = Math.sqrt(1 / Math.max(r.weight || 0, 1e-9));
+            return `<circle cx="${x(Math.exp(r.logEffect))}" cy="${y(se)}" r="1.35" fill="#2d6ea4" opacity="0.85"/>`;
+          }).join('')}
+          <text x="${width / 2}" y="${height - 1}" text-anchor="middle" font-size="5" fill="#5d7388">OR</text>
+          <text x="6" y="${height / 2}" transform="rotate(-90 6 ${height / 2})" text-anchor="middle" font-size="5" fill="#5d7388">SE</text>
+        </svg>`;
+    }
+
+    function renderPoolingEditors(patternRows, pattern) {
+      if (!patternRows || !patternRows.length) return '';
+      const isOpen = isPoolEditorOpen(pattern);
+      const rowsHtml = patternRows.map(row => {
+        const key = row.excludeKey || forestRowKey(row);
+        const excluded = isForestRowExcluded(row);
+        return `<tr style="${excluded ? 'opacity:.55;background:#fafcff;' : ''}">
+          <td style="padding:8px 10px; border-bottom:1px solid #e7eef6; white-space:nowrap;"><a href="https://clinicaltrials.gov/study/${encodeURIComponent(row.nctId || '')}" target="_blank" rel="noreferrer">${escapeHtml(row.nctId || '')}</a>${row.overrideApplied ? ' <span style="color:#aa3b3b;font-size:11px;">edited</span>' : ''}</td>
+          <td style="padding:8px 6px; border-bottom:1px solid #e7eef6;"><input data-pool-edit="1" data-key="${escapeHtml(key)}" data-field="activeEvents" type="number" min="0" value="${Number(row.activeEventsRaw)||0}" style="width:68px;padding:6px 8px;border:1px solid #dbe6f1;border-radius:10px;"></td>
+          <td style="padding:8px 6px; border-bottom:1px solid #e7eef6;"><input data-pool-edit="1" data-key="${escapeHtml(key)}" data-field="activeTotal" type="number" min="0" value="${Number(row.activeTotal)||0}" style="width:68px;padding:6px 8px;border:1px solid #dbe6f1;border-radius:10px;"></td>
+          <td style="padding:8px 6px; border-bottom:1px solid #e7eef6;"><input data-pool-edit="1" data-key="${escapeHtml(key)}" data-field="comparatorEvents" type="number" min="0" value="${Number(row.comparatorEventsRaw)||0}" style="width:68px;padding:6px 8px;border:1px solid #dbe6f1;border-radius:10px;"></td>
+          <td style="padding:8px 6px; border-bottom:1px solid #e7eef6;"><input data-pool-edit="1" data-key="${escapeHtml(key)}" data-field="comparatorTotal" type="number" min="0" value="${Number(row.comparatorTotal)||0}" style="width:68px;padding:6px 8px;border:1px solid #dbe6f1;border-radius:10px;"></td>
+          <td style="padding:8px 8px; border-bottom:1px solid #e7eef6; white-space:nowrap;">
+            <button class="btn soft" type="button" data-pool-reset="${escapeHtml(key)}" style="padding:7px 10px;">Reset</button>
+            <button class="btn ${excluded ? '' : 'soft'}" type="button" data-pool-toggle="${escapeHtml(key)}" style="padding:7px 10px;">${excluded ? 'Include' : 'Exclude'}</button>
+          </td>
+        </tr>`;
+      }).join('');
+      return `<details data-pool-editor="${escapeHtml(pattern)}" ${isOpen ? 'open' : ''} style="margin:10px 0 22px; border:1px solid #dbe6f1; border-radius:18px; padding:0; background:#fbfdff; overflow:hidden;">
+        <summary style="font-weight:700; cursor:pointer; list-style:none; padding:12px 14px; user-select:none; display:flex; align-items:center; justify-content:space-between;">
+          <span>Edit pooled rows for ${escapeHtml(pattern)}</span>
+          <span style="color:#5d7388; font-weight:600; font-size:12px;">Expand / collapse</span>
+        </summary>
+        <div style="padding:0 12px 12px;">
+          <div style="color:#5d7388; font-size:12px; margin:0 0 10px;">Edit the counts here, then click Submit to apply them to the forest plot, summary diamond, and statistics.</div>
+          <div style="overflow:auto;">
+            <table style="width:100%; border-collapse:collapse; font-size:12.5px;">
+              <thead>
+                <tr>
+                  <th style="text-align:left; padding:8px 10px;">Study</th>
+                  <th style="text-align:left; padding:8px 6px;">A n</th>
+                  <th style="text-align:left; padding:8px 6px;">A N</th>
+                  <th style="text-align:left; padding:8px 6px;">P n</th>
+                  <th style="text-align:left; padding:8px 6px;">P N</th>
+                  <th style="text-align:left; padding:8px 8px;">Actions</th>
+                </tr>
+              </thead>
+              <tbody>${rowsHtml}</tbody>
+            </table>
+          </div>
+          <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:10px;">
+            <button class="btn soft" type="button" data-pool-submit="${escapeHtml(pattern)}">Submit</button>
+          </div>
+        </div>
+      </details>`;
+    }
+    function bindPoolingEditors(container, rowsByKey) {
+      if (!container) return;
+      container.querySelectorAll('[data-pool-editor]').forEach(detail => {
+        const pattern = detail.getAttribute('data-pool-editor');
+        detail.addEventListener('toggle', () => setPoolEditorOpen(pattern, detail.open));
+      });
+      container.querySelectorAll('[data-pool-submit]').forEach(btn => {
+        btn.addEventListener('click', async (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          const wrap = btn.closest('[data-pool-editor]');
+          if (!wrap) return;
+          const grouped = {};
+          wrap.querySelectorAll('[data-pool-edit]').forEach(input => {
+            const key = input.getAttribute('data-key');
+            const field = input.getAttribute('data-field');
+            if (!grouped[key]) grouped[key] = {};
+            grouped[key][field] = input.value;
+          });
+          Object.entries(grouped).forEach(([key, values]) => applyPoolingRowOverrideFields(key, values));
+          await renderPooling();
+        });
+      });
+      container.querySelectorAll('[data-pool-reset]').forEach(btn => {
+        btn.addEventListener('click', () => clearPoolingRowOverride(btn.getAttribute('data-pool-reset')));
+      });
+      container.querySelectorAll('[data-pool-toggle]').forEach(btn => {
+        btn.addEventListener('click', () => toggleForestRowExclusion(btn.getAttribute('data-pool-toggle')));
+      });
+    }
+
+        function sanitizeSvgMarkup(svgMarkup) {
+      return String(svgMarkup || '')
+        .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '')
+        .replace(/&(?!#?\w+;)/g, '&amp;');
+    }
+    function svgMarkupToSvgDataUrl(svgMarkup) {
+      const sanitizedSvg = sanitizeSvgMarkup(svgMarkup);
+      return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(sanitizedSvg);
+    }
+    function svgMarkupToPngDataUrl(svgMarkup, scale = 3) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        const sanitizedSvg = sanitizeSvgMarkup(svgMarkup);
+        const svgBlob = new Blob([sanitizedSvg], { type: 'image/svg+xml;charset=utf-8' });
+        const objectUrl = URL.createObjectURL(svgBlob);
+        img.onload = () => {
+          try {
+            const viewBoxMatch = sanitizedSvg.match(/viewBox="\s*([0-9.]+)\s+([0-9.]+)\s+([0-9.]+)\s+([0-9.]+)\s*"/i);
+            const baseWidth = viewBoxMatch ? Number(viewBoxMatch[3]) : (Number(img.width) || 1200);
+            const baseHeight = viewBoxMatch ? Number(viewBoxMatch[4]) : (Number(img.height) || 700);
+            const width = Math.max(1, Math.round(baseWidth * scale));
+            const height = Math.max(1, Math.round(baseHeight * scale));
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.setTransform(scale, 0, 0, scale, 0, 0);
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, baseWidth, baseHeight);
+            ctx.drawImage(img, 0, 0, baseWidth, baseHeight);
+            URL.revokeObjectURL(objectUrl);
+            resolve(canvas.toDataURL('image/png'));
+          } catch (err) {
+            URL.revokeObjectURL(objectUrl);
+            reject(err);
+          }
+        };
+        img.onerror = () => {
+          URL.revokeObjectURL(objectUrl);
+          reject(new Error('Browser could not rasterize the SVG into PNG.'));
+        };
+        img.src = objectUrl;
+      });
+    }
+    function renderInlinePlotSvgs(container) {
+      if (!container) return;
+      const nodes = Array.from(container.querySelectorAll('[data-svg-markup]'));
+      nodes.forEach(node => {
+        const svgMarkup = decodeURIComponent(node.getAttribute('data-svg-markup') || '');
+        const kind = node.getAttribute('data-kind') || 'plot';
+        if (!svgMarkup) return;
+        node.innerHTML = sanitizeSvgMarkup(svgMarkup);
+        const svg = node.querySelector('svg');
+        if (svg) {
+          svg.classList.add('plot-svg');
+          svg.setAttribute('data-kind', kind);
+          svg.setAttribute('preserveAspectRatio', 'xMinYMin meet');
+          svg.style.display = 'block';
+          svg.style.background = '#fff';
+          svg.style.borderRadius = '14px';
+          if (kind === 'funnel') {
+            svg.style.width = '68px';
+            svg.style.maxWidth = '68px';
+            svg.style.height = '84px';
+            svg.style.maxHeight = '84px';
+            svg.style.overflow = 'hidden';
+          } else {
+            svg.style.width = '100%';
+            svg.style.height = 'auto';
+          }
+        }
+      });
+    }
+
+    async function renderPooling() {
+      els.poolingPlot.innerHTML = '<div class="empty">Loading pooled adverse-event details and building plots...</div>';
+      els.poolingTable.innerHTML = '<div class="empty">Loading pooled adverse-event details and building plots...</div>';
+      try {
+      const selectedStudies = poolSelectedStudies();
+      await ensurePoolingDetails(selectedStudies);
+      const rows = buildPoolingRows();
+      const includedRowCount = rows.filter(row => !isForestRowExcluded(row)).length;
+      els.poolingCount.textContent = `${includedRowCount} placebo comparisons in pool`;
+      const poolTerms = getPoolSearchTerms();
+      const poolTermsLabel = poolTerms.join(', ');
+      const manualExcludedCount = state.excludedForestRows.size;
+      els.poolingSelectionSummary.textContent = poolTermsLabel ? `${selectedStudies.length} selected studies ready for pooling. Search terms: ${poolTermsLabel}. Active-versus-active comparators are excluded.${manualExcludedCount ? ' Manually excluded rows: ' + manualExcludedCount + '.' : ''}` : `${selectedStudies.length} selected studies ready for pooling. Enter an adverse event term to generate the graph. Active-versus-active comparators are excluded.${manualExcludedCount ? ' Manually excluded rows: ' + manualExcludedCount + '.' : ''}`;
+      if (!rows.length || !includedRowCount) {
+        els.poolingPlot.innerHTML = !rows.length ? 'No placebo-controlled adverse-event rows were extracted from the selected studies for this event. The app only pools active drug versus placebo. Try a broader AE keyword or select studies that report placebo arm adverse events.' : 'All currently pooled rows are manually excluded. Click a study toggle to include at least one row back into the forest plot.';
+        els.poolingTable.style.display = 'none';
+        els.poolingPlot.style.gridColumn = '1 / -1';
+        els.poolingTable.innerHTML = '';
+        return;
+      }
+
+      const grouped = new Map();
+      rows.forEach(row => {
+        const drugKey = row.drugClass || row.drugName || 'unknown';
+        if (!grouped.has(drugKey)) grouped.set(drugKey, new Map());
+        const byPattern = grouped.get(drugKey);
+        if (!byPattern.has(row.groupPattern)) byPattern.set(row.groupPattern, []);
+        byPattern.get(row.groupPattern).push(row);
+      });
+      const sections = [...grouped.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+      const plotCards = [];
+      const funnelCards = [];
+      const overallRows = [];
+
+      sections.forEach(([drugClass, patternMap]) => {
+        [...patternMap.entries()].forEach(([pattern, patternRowsAll]) => {
+          const patternRows = patternRowsAll.filter(r => !isForestRowExcluded(r));
+          const toggles = patternRowsAll;
+          if (!patternRows.length) return;
+          const totalWeight = patternRows.reduce((s, r) => s + r.weight, 0) || 1;
+          const totalActiveN = patternRows.reduce((s, r) => s + r.activeTotal, 0);
+          const totalCompN = patternRows.reduce((s, r) => s + r.comparatorTotal, 0);
+          patternRows.forEach(r => r.weightPct = (r.weight / totalWeight) * 100);
+          const pooledLog = patternRows.reduce((s, r) => s + (r.logEffect * r.weight), 0) / totalWeight;
+          const pooledSe = Math.sqrt(1 / totalWeight);
+          const pooledLowLog = pooledLog - 1.96 * pooledSe;
+          const pooledHighLog = pooledLog + 1.96 * pooledSe;
+          const pooled = Math.exp(pooledLog);
+          const pooledLow = Math.exp(pooledLowLog);
+          const pooledHigh = Math.exp(pooledHighLog);
+          const q = patternRows.reduce((s, r) => s + r.weight * Math.pow(r.logEffect - pooledLog, 2), 0);
+          const df = Math.max(0, patternRows.length - 1);
+          const i2 = q > df && q > 0 ? Math.max(0, ((q - df) / q) * 100) : 0;
+          const heteroP = df > 0 ? chiSquarePValue(q, df) : 1;
+          const zOverall = pooledSe > 0 ? pooledLog / pooledSe : 0;
+          const pOverall = pValueFromZ(zOverall);
+          const width = 1120;
+          const rowH = 32;
+          const top = 114;
+          const col = { idText: 24, active: 395, comp: 495, weight: 885, num: 1015 };
+          const plotStart = 520, plotWidth = 285;
+          const plotEnd = plotStart + plotWidth;
+          const height = top + rowH * (patternRows.length + 3) + 90;
+          const minLog = Math.min(Math.log(0.1), ...patternRows.map(r => r.lowLog), pooledLowLog);
+          const maxLog = Math.max(Math.log(10), ...patternRows.map(r => r.highLog), pooledHighLog);
+          const x = v => plotStart + ((Math.log(v) - minLog) / (maxLog - minLog || 1)) * plotWidth;
+          const clampX = v => Math.max(plotStart, Math.min(plotEnd, x(v)));
+          const y = i => top + i * rowH;
+          const noEffectX = x(1);
+          const ticks = [0.1, 0.25, 0.5, 1, 2, 4, 10].filter(v => Math.log(v) >= minLog - 1e-9 && Math.log(v) <= maxLog + 1e-9);
+          const forestSvg = `
+            <svg viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">
+              <rect x="0" y="0" width="${width}" height="${height}" fill="#ffffff" rx="18"/>
+              <text x="20" y="32" font-size="16" font-weight="700" fill="#17324d">${escapeHtml((drugClass || 'unknown').toUpperCase())}</text>
+              <text x="20" y="52" font-size="12.5" fill="#5d7388">Adverse event: ${escapeHtml(poolTermsLabel || 'none')}</text>
+              <text x="${col.idText}" y="78" font-size="12.5" font-weight="700" fill="#17324d">Study ID</text>
+              <text x="${col.active}" y="78" text-anchor="middle" font-size="12.5" font-weight="700" fill="#17324d">Active n/N</text>
+              <text x="${col.comp}" y="78" text-anchor="middle" font-size="12.5" font-weight="700" fill="#17324d">Placebo n/N</text>
+              <text x="${plotStart + plotWidth / 2}" y="78" text-anchor="middle" font-size="12.5" font-weight="700" fill="#17324d">Odds ratio with 95% CI</text>
+              <text x="${col.weight}" y="78" text-anchor="end" font-size="12.5" font-weight="700" fill="#17324d">Weight</text>
+              <text x="${col.num}" y="78" text-anchor="end" font-size="12.5" font-weight="700" fill="#17324d">OR [95% CI]</text>
+              <line x1="20" y1="92" x2="${width - 18}" y2="92" stroke="#dbe6f1"/>
+              <rect x="${plotStart}" y="96" width="${plotWidth}" height="${height - 164}" fill="#fbfdff" stroke="#eef3f8" rx="10"/>
+              <line x1="${noEffectX}" y1="96" x2="${noEffectX}" y2="${height - 70}" stroke="#9fb2c5" stroke-dasharray="5 5"/>
+              ${ticks.map(t => `<g><line x1="${x(t)}" y1="${height - 70}" x2="${x(t)}" y2="${height - 64}" stroke="#8ea2b6"/><text x="${x(t)}" y="${height - 48}" text-anchor="middle" font-size="11" fill="#5d7388">${t < 1 ? t.toFixed(2) : (Number.isInteger(t) ? String(t) : t.toFixed(1))}</text></g>`).join('')}
+              <line x1="${plotStart}" y1="${height - 70}" x2="${plotEnd}" y2="${height - 70}" stroke="#8ea2b6"/>
+              <text x="${plotStart}" y="${height - 20}" text-anchor="start" font-size="11.2" fill="#5d7388">Favours placebo</text>
+              <text x="${plotEnd}" y="${height - 20}" text-anchor="end" font-size="11.2" fill="#5d7388">Favours drug</text>
+              ${patternRows.map((r, i) => {
+                const nctLabel = truncateSvgText(r.nctId, 110, 11.1);
+                return `
+                <g>
+                  <a href="${studyResultsUrl(r.nctId)}" target="_blank" rel="noreferrer">
+                    <text x="${col.idText}" y="${y(i) - 4}" font-size="11.1" fill="#2d6ea4" text-decoration="underline">${escapeHtml(nctLabel)}</text>
+                  </a>
+                  <text x="${col.active}" y="${y(i) - 4}" text-anchor="middle" font-size="11.1" fill="#17324d">${r.activeEvents}/${r.activeTotal}</text>
+                  <text x="${col.comp}" y="${y(i) - 4}" text-anchor="middle" font-size="11.1" fill="#17324d">${r.comparatorEvents}/${r.comparatorTotal}</text>
+                  <line x1="${clampX(r.low)}" y1="${y(i) - 8}" x2="${clampX(r.high)}" y2="${y(i) - 8}" stroke="#17324d" stroke-width="2"/>
+                  ${r.low < Math.exp(minLog) ? `<polygon points="${plotStart},${y(i)-8} ${plotStart+8},${y(i)-12} ${plotStart+8},${y(i)-4}" fill="#17324d"/>` : ''}
+                  ${r.high > Math.exp(maxLog) ? `<polygon points="${plotEnd},${y(i)-8} ${plotEnd-8},${y(i)-12} ${plotEnd-8},${y(i)-4}" fill="#17324d"/>` : ''}
+                  <rect x="${clampX(r.effect) - (6 + Math.min(12, r.weightPct / 5)) / 2}" y="${y(i) - (6 + Math.min(12, r.weightPct / 5)) / 2 - 8}" width="${6 + Math.min(12, r.weightPct / 5)}" height="${6 + Math.min(12, r.weightPct / 5)}" fill="#2d6ea4" rx="1.5"/>
+                  <text x="${col.weight}" y="${y(i) - 4}" text-anchor="end" font-size="11.1" fill="#17324d">${formatPct(r.weightPct)}</text>
+                  <text x="${col.num}" y="${y(i) - 4}" text-anchor="end" font-size="11.1" fill="#17324d">${r.effect.toFixed(2)} [${r.low.toFixed(2)}, ${r.high.toFixed(2)}]</text>
+                </g>`;
+              }).join('')}
+              <g>
+                <text x="${col.idText}" y="${y(patternRows.length) + 8}" font-size="12.2" font-weight="700" fill="#17324d">Total</text>
+                <text x="${col.active}" y="${y(patternRows.length) + 8}" text-anchor="middle" font-size="11.6" fill="#17324d">${totalActiveN}</text>
+                <text x="${col.comp}" y="${y(patternRows.length) + 8}" text-anchor="middle" font-size="11.6" fill="#17324d">${totalCompN}</text>
+                <polygon points="${clampX(pooled)},${y(patternRows.length) - 6} ${clampX(pooledHigh)},${y(patternRows.length) + 2} ${clampX(pooled)},${y(patternRows.length) + 10} ${clampX(pooledLow)},${y(patternRows.length) + 2}" fill="#18794e" opacity="0.92"/>
+                <text x="${col.weight}" y="${y(patternRows.length) + 8}" text-anchor="end" font-size="11.6" fill="#17324d">100.0%</text>
+                <text x="${col.num}" y="${y(patternRows.length) + 8}" text-anchor="end" font-size="11.6" fill="#17324d">${pooled.toFixed(2)} [${pooledLow.toFixed(2)}, ${pooledHigh.toFixed(2)}]</text>
+              </g>
+              <text x="${col.idText}" y="${height - 48}" font-size="12" fill="#17324d">Heterogeneity: Chi² = ${q.toFixed(2)}, df = ${df}, P = ${formatPValue(heteroP)}, I² = ${i2.toFixed(1)}%</text>
+              <text x="${col.idText}" y="${height - 30}" font-size="12" fill="#17324d">Overall effect: z = ${zOverall.toFixed(2)}, P = ${formatPValue(pOverall)}</text>
+            </svg>`;
+          const toggleButtonsHtml = `<div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:10px;">${toggles.map(r => {
+            const excluded = isForestRowExcluded(r);
+            const btnLabel = excluded ? 'Excluded' : 'Included';
+            const label = `${stripStudyNct(r.shortLabel, r.nctId)} ${r.nctId ? '(' + r.nctId + ')' : ''}`;
+            return `<button class="btn ${excluded ? 'soft' : ''}" type="button" data-forest-toggle="${escapeHtml(r.excludeKey)}" aria-pressed="${excluded ? 'true' : 'false'}" title="Click to ${excluded ? 'include' : 'exclude'} this study from the pooled diamond and calculations">${escapeHtml(label)}: ${btnLabel}</button>`;
+          }).join('')}</div>`;
+          const editorHtml = renderPoolingEditors(patternRows, pattern);
+          const controlsHtml = `${editorHtml}${toggleButtonsHtml}`;
+          plotCards.push({ title: pattern, svg: forestSvg, kind: 'forest', studyIds: [...new Set(patternRows.map(r => r.nctId).filter(Boolean))], controlsHtml, rowsByKey: Object.fromEntries(patternRows.map(r => [r.excludeKey || forestRowKey(r), r])) });
+          
+          overallRows.push({
+            drugName: drugClass,
+            shortLabel: pattern,
+            activeEvents: patternRows.reduce((s, r) => s + r.activeEvents, 0),
+            activeTotal: totalActiveN,
+            comparatorEvents: patternRows.reduce((s, r) => s + r.comparatorEvents, 0),
+            comparatorTotal: totalCompN,
+            weight: totalWeight,
+            effect: pooled,
+            low: pooledLow,
+            high: pooledHigh,
+            lowLog: pooledLowLog,
+            highLog: pooledHighLog,
+            logEffect: pooledLog
+          });
+        });
+      });
+
+      if (sections.length >= 2) {
+        const totalWeight = overallRows.reduce((s, r) => s + r.weight, 0) || 1;
+        overallRows.forEach(r => r.overallWeightPct = (r.weight / totalWeight) * 100);
+        const pooledLog = overallRows.reduce((s, r) => s + (r.logEffect * r.weight), 0) / totalWeight;
+        const pooledSe = Math.sqrt(1 / totalWeight);
+        const pooledLowLog = pooledLog - 1.96 * pooledSe;
+        const pooledHighLog = pooledLog + 1.96 * pooledSe;
+        const pooled = Math.exp(pooledLog);
+        const pooledLow = Math.exp(pooledLowLog);
+        const pooledHigh = Math.exp(pooledHighLog);
+        const width = 1240;
+        const rowH = 32;
+        const top = 114;
+        const col = { drug: 18, id: 150, active: 420, comp: 530, weight: 1030, num: 1210 };
+        const plotStart = 565, plotWidth = 390;
+        const plotEnd = plotStart + plotWidth;
+        const height = top + rowH * (overallRows.length + 3) + 90;
+        const minLog = Math.min(Math.log(0.1), ...overallRows.map(r => r.lowLog), pooledLowLog);
+        const maxLog = Math.max(Math.log(10), ...overallRows.map(r => r.highLog), pooledHighLog);
+        const x = v => plotStart + ((Math.log(v) - minLog) / (maxLog - minLog || 1)) * plotWidth;
+        const clampX = v => Math.max(plotStart, Math.min(plotEnd, x(v)));
+        const y = i => top + i * rowH;
+        const noEffectX = x(1);
+        const ticks = [0.1, 0.25, 0.5, 1, 2, 4, 10].filter(v => Math.log(v) >= minLog - 1e-9 && Math.log(v) <= maxLog + 1e-9);
+        const overallSvg = `
+          <svg viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">
+            <rect x="0" y="0" width="${width}" height="${height}" fill="#ffffff" rx="18"/>
+            <text x="18" y="32" font-size="16" font-weight="700" fill="#17324d">OVERALL SUMMARY</text>
+            <text x="18" y="52" font-size="12.5" fill="#5d7388">Adverse event: ${escapeHtml(poolTermsLabel || 'none')}</text>
+            <text x="${col.drug}" y="78" font-size="12.5" font-weight="700" fill="#17324d">Drug</text>
+            <text x="${col.id}" y="78" font-size="12.5" font-weight="700" fill="#17324d">Summary</text>
+            <text x="${col.active}" y="78" text-anchor="middle" font-size="12.5" font-weight="700" fill="#17324d">Active n/N</text>
+            <text x="${col.comp}" y="78" text-anchor="middle" font-size="12.5" font-weight="700" fill="#17324d">Placebo n/N</text>
+            <text x="${plotStart + plotWidth / 2}" y="78" text-anchor="middle" font-size="12.5" font-weight="700" fill="#17324d">Odds ratio with 95% CI</text>
+            <text x="${col.weight}" y="78" text-anchor="end" font-size="12.5" font-weight="700" fill="#17324d">Weight</text>
+            <text x="${col.num}" y="78" text-anchor="end" font-size="12.5" font-weight="700" fill="#17324d">OR [95% CI]</text>
+            <line x1="18" y1="92" x2="${width - 18}" y2="92" stroke="#dbe6f1"/>
+            <rect x="${plotStart}" y="96" width="${plotWidth}" height="${height - 164}" fill="#fbfdff" stroke="#eef3f8" rx="10"/>
+            <line x1="${noEffectX}" y1="96" x2="${noEffectX}" y2="${height - 70}" stroke="#9fb2c5" stroke-dasharray="5 5"/>
+            ${ticks.map(t => `<g><line x1="${x(t)}" y1="${height - 70}" x2="${x(t)}" y2="${height - 64}" stroke="#8ea2b6"/><text x="${x(t)}" y="${height - 48}" text-anchor="middle" font-size="11" fill="#5d7388">${t < 1 ? t.toFixed(2) : (Number.isInteger(t) ? String(t) : t.toFixed(1))}</text></g>`).join('')}
+            <line x1="${plotStart}" y1="${height - 70}" x2="${plotEnd}" y2="${height - 70}" stroke="#8ea2b6"/>
+            <text x="${plotStart}" y="${height - 20}" text-anchor="start" font-size="11.2" fill="#5d7388">Favours placebo</text>
+            <text x="${plotEnd}" y="${height - 20}" text-anchor="end" font-size="11.2" fill="#5d7388">Favours drug</text>
+            ${overallRows.map((r, i) => `
+              <g>
+                <text x="${col.drug}" y="${y(i) - 4}" font-size="11.1" fill="#17324d">${escapeHtml(truncateSvgText(r.drugName, 140, 11.1))}</text>
+                <text x="${col.id}" y="${y(i) - 4}" font-size="11.1" fill="#17324d">${escapeHtml(truncateSvgText(r.shortLabel, 250, 11.1))}</text>
+                <line x1="${clampX(r.low)}" y1="${y(i) - 8}" x2="${clampX(r.high)}" y2="${y(i) - 8}" stroke="#17324d" stroke-width="2"/>
+                ${r.low < Math.exp(minLog) ? `<polygon points="${plotStart},${y(i)-8} ${plotStart+8},${y(i)-12} ${plotStart+8},${y(i)-4}" fill="#17324d"/>` : ''}
+                ${r.high > Math.exp(maxLog) ? `<polygon points="${plotEnd},${y(i)-8} ${plotEnd-8},${y(i)-12} ${plotEnd-8},${y(i)-4}" fill="#17324d"/>` : ''}
+                <rect x="${clampX(r.effect) - 7}" y="${y(i) - 15}" width="14" height="14" fill="#2d6ea4" rx="2.5" opacity="0.92"/>
+                <text x="${col.active}" y="${y(i) - 4}" text-anchor="middle" font-size="11.1" fill="#17324d">${r.activeEvents}/${r.activeTotal}</text>
+                <text x="${col.comp}" y="${y(i) - 4}" text-anchor="middle" font-size="11.1" fill="#17324d">${r.comparatorEvents}/${r.comparatorTotal}</text>
+                <text x="${col.weight}" y="${y(i) - 4}" text-anchor="end" font-size="11.1" fill="#17324d">${formatPct(r.overallWeightPct)}</text>
+                <text x="${col.num}" y="${y(i) - 4}" text-anchor="end" font-size="11.1" fill="#17324d">${r.effect.toFixed(2)} [${r.low.toFixed(2)}, ${r.high.toFixed(2)}]</text>
+              </g>`).join('')}
+            <g>
+              <text x="${col.drug}" y="${y(overallRows.length) + 8}" font-size="12.2" font-weight="700" fill="#17324d">Overall</text>
+              <line x1="${clampX(pooledLow)}" y1="${y(overallRows.length) + 1}" x2="${clampX(pooledHigh)}" y2="${y(overallRows.length) + 1}" stroke="#17324d" stroke-width="2.2"/>
+              ${pooledLow < Math.exp(minLog) ? `<polygon points="${plotStart},${y(overallRows.length)+1} ${plotStart+8},${y(overallRows.length)-3} ${plotStart+8},${y(overallRows.length)+5}" fill="#17324d"/>` : ''}
+              ${pooledHigh > Math.exp(maxLog) ? `<polygon points="${plotEnd},${y(overallRows.length)+1} ${plotEnd-8},${y(overallRows.length)-3} ${plotEnd-8},${y(overallRows.length)+5}" fill="#17324d"/>` : ''}
+              <polygon points="${clampX(pooled)},${y(overallRows.length) - 9} ${clampX(pooled) + 12},${y(overallRows.length) + 1} ${clampX(pooled)},${y(overallRows.length) + 11} ${clampX(pooled) - 12},${y(overallRows.length) + 1}" fill="#18794e" opacity="0.92"/>
+              <text x="${col.weight}" y="${y(overallRows.length) + 8}" text-anchor="end" font-size="11.6" fill="#17324d">100.0%</text>
+              <text x="${col.num}" y="${y(overallRows.length) + 8}" text-anchor="end" font-size="11.6" fill="#17324d">${pooled.toFixed(2)} [${pooledLow.toFixed(2)}, ${pooledHigh.toFixed(2)}]</text>
+            </g>
+          </svg>`;
+        plotCards.push({ title: 'Overall summary', svg: overallSvg, kind: 'forest', studyIds: [...new Set(rows.map(r => r.nctId).filter(Boolean))] });
+      }
+
+      const funnelByTitle = new Map();
+      els.poolingPlot.innerHTML = `<div id="forestPlotsWrap">${plotCards.map((card, idx) => {
+        const firstStudyId = (card.studyIds && card.studyIds[0]) ? card.studyIds[0] : '';
+        const clinicalUrl = firstStudyId ? `https://clinicaltrials.gov/study/${firstStudyId}?tab=results` : '';
+        const isOverallSummary = String(card.title || '').toLowerCase() === 'overall summary';
+        const titleHtml = clinicalUrl && !isOverallSummary
+          ? `<h3 style="margin:0;"><a href="${clinicalUrl}" target="_blank" rel="noreferrer">${escapeHtml(card.title)}</a></h3>`
+          : `<h3 style="margin:0;">${escapeHtml(card.title)}</h3>`;
+        const funnel = null;
+        const side = '';
+        return `<div style="margin-bottom:24px;"><div class="section-title">${titleHtml}</div><div style="display:flex; gap:0; align-items:flex-start; flex-wrap:nowrap;"><div style="flex:1 1 auto; min-width:0;"><div data-kind="forest" data-svg-markup="${encodeURIComponent(card.svg)}"></div>${card.controlsHtml || ''}</div>${side}</div></div>`;
+      }).join('')}</div>`;
+      els.poolingTable.style.display = 'none';
+      els.poolingPlot.style.gridColumn = '1 / -1';
+      els.poolingTable.innerHTML = '';
+      const forestWrap = document.getElementById('forestPlotsWrap');
+      renderInlinePlotSvgs(forestWrap);
+      if (forestWrap) {
+        forestWrap.querySelectorAll('[data-forest-toggle]').forEach(btn => {
+          btn.addEventListener('click', () => toggleForestRowExclusion(btn.getAttribute('data-forest-toggle') || ''));
+        });
+        plotCards.forEach(card => {
+          const block = Array.from(forestWrap.children).find(el => {
+            const heading = el.querySelector('h3');
+            return heading && heading.textContent.trim() === String(card.title || '').trim();
+          });
+          if (block && card.rowsByKey) bindPoolingEditors(block, card.rowsByKey);
+        });
+      }
+      } catch (error) {
+        els.poolingPlot.innerHTML = `<div class="empty">Pooling render failed: ${escapeHtml(error && error.message ? error.message : String(error))}</div>`;
+        els.poolingTable.style.display = 'none';
+        els.poolingTable.innerHTML = '';
+        console.error('renderPooling failed', error);
+      }
+    }
+    async function downloadCurrentImage(wrapperId, filename, kind) {
+      const wrap = document.getElementById(wrapperId);
+      const svg = wrap ? wrap.querySelector(`svg.plot-svg[data-kind="${kind}"]`) : null;
+      if (!svg) return;
+      const svgMarkup = svg.outerHTML;
+      try {
+        const pngUrl = await svgMarkupToPngDataUrl(svgMarkup, 4);
+        const a = document.createElement('a');
+        a.href = pngUrl;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      } catch (err) {
+        const svgBlob = new Blob([sanitizeSvgMarkup(svgMarkup)], { type: 'image/svg+xml;charset=utf-8' });
+        const svgUrl = URL.createObjectURL(svgBlob);
+        const a = document.createElement('a');
+        a.href = svgUrl;
+        a.download = filename.replace(/\.png$/i, '.svg');
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(svgUrl), 1000);
+      }
+    }
+    async function exportPoolingCsv() {
+      const selectedStudies = poolSelectedStudies();
+      await ensurePoolingDetails(selectedStudies);
+      const rows = buildPoolingRows();
+      const header = ['Drug Class','Pattern','Study ID','Title','Search Terms','Drug Name','Compare','Active Group','Comparator Group','Active Events','Active Total','Comparator Events','Comparator Total','Weight','Odds Ratio','Low','High'];
+      const body = rows.map(r => [r.drugName, r.groupPattern, r.shortLabel, r.title, r.searchTerms, r.drugName, r.compare, r.activeGroup, r.comparatorGroup, r.activeEvents, r.activeTotal, r.comparatorEvents, r.comparatorTotal, r.weight, r.effect, r.low, r.high]);
+      downloadBlob('pooling_analysis.csv', [header, ...body].map(r => r.map(csvCell).join(',')).join('\n'), 'text/csv;charset=utf-8');
+    }
+    async function copyText(text) { await navigator.clipboard.writeText(text); }
+    async function copyQueryPreview() {
+      await copyText(els.queryPreview.textContent);
+      els.copyQueryBtn.textContent = 'Copied';
+      els.copyQueryBtnTop.textContent = 'Copied';
+      setTimeout(() => { els.copyQueryBtn.textContent = 'Copy query preview'; els.copyQueryBtnTop.textContent = 'Copy query preview'; }, 900);
+    }
+    function openModal(study) {
+      els.modalTitle.textContent = study.briefTitle || study.officialTitle || study.nctId;
+      els.modalMeta.textContent = `${study.nctId} • ${study.studyType || 'Study type not listed'} • ${study.overallStatus || 'Status not listed'}`;
+      els.modalRaw.textContent = JSON.stringify(study.raw, null, 2);
+      els.studyModal.classList.add('open');
+      els.studyModal.setAttribute('aria-hidden', 'false');
+    }
+    function closeModal() {
+      els.studyModal.classList.remove('open');
+      els.studyModal.setAttribute('aria-hidden', 'true');
+    }
+    function resetForm(switchBack = true) {
+      document.querySelectorAll('input, textarea, select').forEach(el => {
+        if (el.type === 'checkbox' || el.type === 'radio') {
+          if (el.name === 'studyStatus' && el.value === 'all') el.checked = true;
+          else if (el.name === 'studyResults' && el.value === '') el.checked = true;
+          else if (el.name === 'sexFilter' && el.value === 'ALL') el.checked = true;
+          else if (!el.name) el.checked = false;
+          else if (!['studyStatus','studyResults','sexFilter'].includes(el.name)) el.checked = false;
+        } else el.value = '';
+      });
+      state.rawStudies = []; state.evaluatedStudies = []; state.visibleStudies = []; state.excludedStudies = []; state.selectedStudyIds = new Set(); state.excludedForestRows = new Set(); state.poolingRowOverrides = {}; state.currentFilters = null; state.lastQueryUrl = '';
+      els.activeFilters.innerHTML = '';
+      els.statsGrid.innerHTML = '';
+      els.resultsArea.className = 'empty'; els.resultsArea.textContent = 'No search has been run yet.';
+      els.excludedArea.className = 'empty'; els.excludedArea.textContent = 'No excluded studies yet.';
+      els.queryPreview.textContent = 'Build a search and press Search.';
+      els.resultsNote.textContent = 'Run a search to see fetched studies, included studies, extractable-ready studies, and excluded studies with reasons.';
+      els.resultsCount.textContent = '0 visible studies'; els.excludedCount.textContent = '0 excluded';
+      els.poolingPlot.textContent = 'Run a search first, then open Pooling.'; els.poolingTable.textContent = 'No pooled data yet.'; els.poolingCount.textContent = '0 studies in pool'; els.poolingSelectionSummary.textContent = '0 selected studies ready for pooling.';
+      const exSec = document.getElementById('excludedSection'); if (exSec) exSec.classList.remove('open');
+      const exBody = document.getElementById('excludedBody'); if (exBody) exBody.style.display = 'none';
+      const exBtn = document.getElementById('excludedToggleBtn'); if (exBtn) exBtn.textContent = 'Expand';
+      if (switchBack) switchTab('search');
+    }
+    function applyDeveloperPreset() {
+      resetForm(false);
+      els.condition.value = 'Major Depressive Disorder';
+      els.intervention.value = 'aripiprazole, brexpiprazole, quetiapine, cariprazine, lumateperone, olanzapine, fluoxetine';
+      els.otherTerms.value = '';
+      document.querySelector('.phaseChk[value="PHASE3"]').checked = true;
+      document.querySelector('.phaseChk[value="PHASE2"]').checked = true;
+      document.querySelector('.phaseChk[value="PHASE1"]').checked = false;
+      document.querySelector('.phaseChk[value="PHASE4"]').checked = false;
+      document.querySelector('.phaseChk[value="EARLY_PHASE1"]').checked = false;
+      document.querySelector('.typeChk[value="INTERVENTIONAL"]').checked = true;
+      document.querySelector('input[name="studyResults"][value="with"]').checked = true;
+      if (els.poolAeSelect) els.poolAeSelect.value = 'death';
+      if (els.poolAeTerms) els.poolAeTerms.value = 'death';
+      switchTab('search');
+    }
+    async function runSearch() {
+      const filters = collectFilters();
+      if (!filters.conditions.length && !filters.interventions.length && !filters.otherTerms) {
+        els.resultsArea.className = 'empty';
+        els.resultsArea.textContent = 'Add at least a condition, an intervention, or other terms before searching.';
+        switchTab('results');
+        return;
+      }
+      state.currentFilters = filters;
+      renderActiveFilters(filters);
+      els.queryPreview.textContent = buildQueryPreview(filters);
+      els.expertSearchLink.title = makeExpertSearchText(filters);
+      switchTab('results');
+      setLoading(true);
+      try {
+        const rawStudies = await fetchAllStudies(filters);
+        state.rawStudies = rawStudies;
+        const flattened = rawStudies.map(flattenStudy);
+        const evaluated = flattened.map(study => { study._evaluation = evaluateStudy(study, filters); return study; });
+        state.evaluatedStudies = evaluated;
+        state.visibleStudies = evaluated.filter(study => study._evaluation.include);
+        state.excludedStudies = evaluated.filter(study => !study._evaluation.include);
+        state.selectedStudyIds = new Set(state.visibleStudies.map(study => study.nctId)); state.excludedForestRows = new Set(); state.poolingRowOverrides = {};
+        renderStats(state.visibleStudies, rawStudies, filters, state.excludedStudies);
+        renderStudies(state.visibleStudies, state.excludedStudies);
+      } catch (error) {
+        els.resultsArea.className = 'empty';
+        els.resultsArea.textContent = `Search failed: ${error.message}`;
+        els.excludedArea.className = 'empty';
+        els.excludedArea.textContent = 'Search did not complete.';
+      } finally {
+        setLoading(false);
+        renderPooling();
+      }
+    }
+
+    if (els.searchBtn) els.searchBtn.addEventListener('click', runSearch);
+    if (els.searchBtnBottom) els.searchBtnBottom.addEventListener('click', runSearch);
+    if (els.resetBtn) els.resetBtn.addEventListener('click', () => resetForm(true));
+    if (els.resetBtnBottom) els.resetBtnBottom.addEventListener('click', () => resetForm(true));
+    if (els.developerBtn) els.developerBtn.addEventListener('click', applyDeveloperPreset);
+    if (els.developerBtnBottom) els.developerBtnBottom.addEventListener('click', applyDeveloperPreset);
+    els.searchTabBtn.addEventListener('click', () => switchTab('search'));
+    els.resultsTabBtn.addEventListener('click', () => switchTab('results'));
+    els.poolingTabBtn.addEventListener('click', () => switchTab('pooling'));
+    els.moreToggle.addEventListener('click', (e) => { if (e.target.closest('button')) return; els.moreCard.classList.toggle('open'); els.moreBody.style.display = els.moreCard.classList.contains('open') ? 'block' : 'none'; els.moreToggleBtn.textContent = els.moreCard.classList.contains('open') ? 'Collapse' : 'Expand'; });
+    els.moreToggleBtn.addEventListener('click', (e) => { e.stopPropagation(); els.moreCard.classList.toggle('open'); els.moreBody.style.display = els.moreCard.classList.contains('open') ? 'block' : 'none'; els.moreToggleBtn.textContent = els.moreCard.classList.contains('open') ? 'Collapse' : 'Expand'; });
+    const excludedSection = document.getElementById('excludedSection');
+    const excludedBody = document.getElementById('excludedBody');
+    const excludedToggle = document.getElementById('excludedToggle');
+    const excludedToggleBtn = document.getElementById('excludedToggleBtn');
+    function toggleExcludedSection(forceOpen = null) {
+      if (!excludedSection || !excludedBody || !excludedToggleBtn) return;
+      const open = forceOpen === null ? !excludedSection.classList.contains('open') : !!forceOpen;
+      excludedSection.classList.toggle('open', open);
+      excludedBody.style.display = open ? 'block' : 'none';
+      excludedToggleBtn.textContent = open ? 'Collapse' : 'Expand';
+      if (open) renderExcludedStudies(state.excludedStudies || []);
+    }
+    if (excludedToggle) excludedToggle.addEventListener('click', (e) => { if (e.target.closest('button')) return; toggleExcludedSection(); });
+    if (excludedToggleBtn) excludedToggleBtn.addEventListener('click', (e) => { e.stopPropagation(); toggleExcludedSection(); });
+    els.copyQueryBtn.addEventListener('click', copyQueryPreview);
+    els.copyQueryBtnTop.addEventListener('click', copyQueryPreview);
+    els.exportVisibleCsvBtn.addEventListener('click', exportVisibleCsv);
+    els.exportVisibleJsonBtn.addEventListener('click', exportVisibleJson);
+    els.exportFetchedJsonBtn.addEventListener('click', exportFetchedJson);
+    els.exportPoolingCsvBtn.addEventListener('click', exportPoolingCsv);
+    els.refreshPoolingBtn.addEventListener('click', () => { renderPooling(); });
+    els.downloadForestBtn.addEventListener('click', () => downloadCurrentImage('forestPlotsWrap', 'forest_plot.png', 'forest'));
+    els.downloadFunnelBtn.addEventListener('click', () => downloadCurrentImage('funnelPlotsWrap', 'funnel_plot.png', 'funnel'));
+    els.sortStudies.addEventListener('change', () => renderStudies(state.visibleStudies, state.excludedStudies));
+    els.resultsPhaseFilter.addEventListener('change', () => renderStudies(state.visibleStudies, state.excludedStudies));
+    if (els.poolAeSelect) els.poolAeSelect.addEventListener('change', () => { renderPooling(); });
+    let poolTermTimer = null;
+    if (els.poolAeTerms) els.poolAeTerms.addEventListener('input', () => { clearTimeout(poolTermTimer); poolTermTimer = setTimeout(() => renderPooling(), 250); });
+    els.closeModalBtn.addEventListener('click', closeModal);
+    els.studyModal.addEventListener('click', (e) => { if (e.target === els.studyModal) closeModal(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
+
+    document.addEventListener('change', (e) => {
+      const selector = e.target.closest('[data-select-study]');
+      if (selector) {
+        const nct = selector.getAttribute('data-select-study');
+        if (selector.checked) state.selectedStudyIds.add(nct); else state.selectedStudyIds.delete(nct);
+        renderPooling();
+      }
+    });
+
+    document.addEventListener('click', async (e) => {
+      const copyBtn = e.target.closest('[data-copy-nct]');
+      if (copyBtn) {
+        const nct = copyBtn.getAttribute('data-copy-nct');
+        await copyText(nct);
+        const old = copyBtn.textContent;
+        copyBtn.textContent = `${nct} copied`;
+        setTimeout(() => copyBtn.textContent = old, 900);
+      }
+      const modalBtn = e.target.closest('[data-open-modal]');
+      if (modalBtn) {
+        const index = Number(modalBtn.getAttribute('data-open-modal'));
+        const study = state.visibleStudies[index];
+        if (study) openModal(study);
+      }
+      const jumpStudy = e.target.closest('[data-jump-study]');
+      if (jumpStudy) {
+        e.preventDefault();
+        const nct = jumpStudy.getAttribute('data-jump-study');
+        switchTab('results');
+        requestAnimationFrame(() => {
+          const target = document.getElementById(`study-${nct}`);
+          if (target) {
+            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            target.style.boxShadow = '0 0 0 4px rgba(45,110,164,.18), 0 10px 20px rgba(25, 46, 68, 0.08)';
+            setTimeout(() => { target.style.boxShadow = ''; }, 1800);
+          }
+        });
+      }
+    });
+
+    switchTab('search');
+  </script>
+</body>
+</html>
